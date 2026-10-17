@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
@@ -11,7 +11,7 @@ canvas#game{display:block;width:100vw;height:100vh;cursor:crosshair}
 .hidden{display:none !important}
 .panel{background:rgba(9,24,33,.74);border:1px solid rgba(99,220,232,.28);border-radius:13px;padding:10px 13px;backdrop-filter:blur(7px);box-shadow:0 8px 26px rgba(0,0,0,.45)}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:5}
-#statPanel{position:absolute;left:16px;top:14px;min-width:236px}
+#statPanel{position:absolute;left:16px;top:14px;min-width:320px}   /* 面板加宽 → 阶段进度条更长 */
 .statLine{display:flex;justify-content:space-between;align-items:baseline;gap:14px;font-size:13px;color:#9dc4d6;letter-spacing:.5px}
 .statLine .v{font-size:23px;font-weight:700;color:#7fe6f2;text-shadow:0 0 14px rgba(99,220,232,.5);font-variant-numeric:tabular-nums}
 #statExtra{font-size:12px;color:#88a9ba;margin-top:6px}
@@ -26,11 +26,13 @@ canvas#game{display:block;width:100vw;height:100vh;cursor:crosshair}
 .endText{flex:1 1 0;color:#eaf4ff;text-shadow:0 2px 18px rgba(0,0,0,.8)}
 .endText h2{font-size:26px;letter-spacing:6px;margin:0 0 18px;color:#9fe4ff;font-weight:700}
 .endText p{font-size:17px;line-height:2;margin:0 0 18px;color:#dceaf7}
-.endHint{font-size:13px!important;color:#8fb4c8!important;margin-top:26px!important}
+.endHint{font-size:13px!important;color:#8fb4c8!important;margin-top:20px!important}
+.endBtns{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.endBtns .ovBtn{font-size:14px;padding:10px 20px}
 @media (max-width:900px){.endWrap{flex-direction:column}.endText{text-align:center}}
 .tier{margin:6px 0 5px;font-size:15px;font-weight:700;color:#f0b263;letter-spacing:1px}
-.bar{height:7px;border-radius:5px;background:rgba(255,255,255,.11);overflow:hidden}
-.bar i{display:block;height:100%;width:4%;border-radius:5px;background:linear-gradient(90deg,#63DCE8,#8FAECB,#E39A2B);transition:width .25s}
+.bar{height:11px;border-radius:6px;background:rgba(255,255,255,.11);overflow:hidden;margin-top:2px}
+.bar i{display:block;height:100%;width:4%;border-radius:6px;background:linear-gradient(90deg,#63DCE8,#8FAECB,#E39A2B);transition:width .25s;box-shadow:0 0 10px rgba(99,220,232,.5)}
 #rivalPanel{position:absolute;right:16px;top:14px;width:246px}
 #rivalPanel h4{font-size:12.5px;font-weight:600;color:#8fd9e6;letter-spacing:1.6px;margin-bottom:8px}
 .rival{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px;color:#c6dee9}
@@ -121,7 +123,7 @@ h1 span{font-size:16px;color:#63DCE8;letter-spacing:3px;display:block;margin-top
   </div>
   <div class="panel" id="miniPanel"><canvas id="minimap" width="188" height="188"></canvas><div class="miniLabel">城市俯瞰</div></div>
   <div class="panel" id="helpPanel">
-    <b>WASD / 方向键</b> 移动　<b>空格 / 左键</b> 踩踏　<b>E</b> 吞食　<b>按住 Q</b> 抢夺体型　<b>Shift</b> 冲刺<br>
+    <b>WASD / 方向键</b> 移动　<b>空格 / 左键</b> 踩踏　<b>E</b> 吞噬（范围内一口清空）　<b>按住 Q</b> 抢夺体型　<b>Shift</b> 冲刺<br>
     <b>P</b> 暂停　<b>M</b> 静音　走到人群里会自然踩到人，踩建筑能拆楼，吃东西长得更快。
   </div>
   <div class="hint" id="hint"></div>
@@ -131,7 +133,7 @@ h1 span{font-size:16px;color:#63DCE8;letter-spacing:3px;display:block;margin-top
 <div id="touchUI" class="hidden">
   <div id="stick"><div id="stickKnob"></div></div>
   <div id="touchBtns">
-    <button class="tbtn" data-hold="e">吞食</button>
+    <button class="tbtn" data-hold="e">吞噬</button>
     <button class="tbtn big" data-k=" ">踩踏</button>
     <button class="tbtn small" data-k="p">暂停</button>
     <button class="tbtn" data-hold="q">抢夺</button>
@@ -157,16 +159,16 @@ h1 span{font-size:16px;color:#63DCE8;letter-spacing:3px;display:block;margin-top
     <div class="ctrlGrid">
       <div><b>WASD / ↑↓←→</b><br>移动</div>
       <div><b>空格 / 鼠标左键</b><br>踩踏</div>
-      <div><b>E</b><br>吞食（人 / 食物 / 车）</div>
+      <div><b>E</b><br>吞噬（范围内的东西）<br>≤80% 身高的竞争者/建筑<br>也能直接吃掉，代价 10s CD</div>
       <div><b>按住 Q</b><br>抢夺体型</div>
       <div><b>F　牵引</b><br>吸收之旅专属：把竞争者拉到身前并眩晕 3 秒</div>
       <div><b>Shift / P / M</b><br>冲刺 / 暂停 / 静音</div>
     </div>
     <div class="btnRow">
-      <button class="primary" id="btnStart">剧 情 模 式</button>
+      <button class="primary" id="btnStart">快 速 模 式</button>
       <button class="primary endless" id="btnEndless">吸 收 之 旅</button>
     </div>
-    <p class="tip">剧情模式：吸收三头竞争者即通关　·　吸收之旅：体型无上限，城区会随你一起变大并不断再生</p>
+    <p class="tip">快速模式：吸收三头竞争者即通关　·　吸收之旅：体型无上限，山脉级与大陆级在海岛大陆上，到星系级立刻进入宇宙</p>
     <p class="tip">单文件分享版 · 所有素材已内嵌，双击即可玩 · 无需联网 · 手机打开会有虚拟摇杆与按键</p>
   </div>
 </div>
@@ -178,6 +180,7 @@ h1 span{font-size:16px;color:#63DCE8;letter-spacing:3px;display:block;margin-top
     <div class="btnRow">
       <button class="ovBtn primary" id="btnResume">继续游戏</button>
       <button class="ovBtn" id="btnRestart2">重新开始</button>
+      <button class="ovBtn" id="btnToMenu2">返回主菜单</button>
     </div>
   </div>
 </div>
@@ -190,6 +193,7 @@ h1 span{font-size:16px;color:#63DCE8;letter-spacing:3px;display:block;margin-top
     <div class="btnRow">
       <button class="ovBtn primary" id="btnFree">继续蹂躏城市</button>
       <button class="ovBtn" id="btnRestart">再来一局</button>
+      <button class="ovBtn" id="btnToMenu">返回主菜单</button>
     </div>
   </div>
 </div>
@@ -203,7 +207,11 @@ h1 span{font-size:16px;color:#63DCE8;letter-spacing:3px;display:block;margin-top
          也包括“你的控制器”。</p>
       <p>你的任务结束了。</p>
       <p>现在……他要去找找其他的乐趣了。</p>
-      <p class="endHint">按任意键 / 点击结束本局，返回标题</p>
+      <p class="endHint">按任意键 / 点击空白处 = 结束本局　·　想继续玩请点下面的按钮</p>
+      <div class="endBtns">
+        <button class="ovBtn primary" id="btnEndFinish">结 束 本 局</button>
+        <button class="ovBtn" id="btnEndKeep">继续游玩（封顶宇宙级）</button>
+      </div>
     </div>
   </div>
 </div>
@@ -255,19 +263,25 @@ const RIVAL_PALS = [
 const WORLD = { w: 8800, h: 8800 };
 const BLOCK0 = 470, ROAD0 = 74;
 let BLOCK = BLOCK0, ROAD = ROAD0;
-let CS = 1;                          // 城市尺度：无尽模式随体型放大（剧情模式恒为 1）
+let CS = 1;                          // 城市尺度：无尽模式随体型放大（快速模式恒为 1）
 let mode = 'story';                  // story | endless
 let stage = 'city';                  // city | macro | space
 const MACRO_MASS = 30;               // 山脉级：切到山脉与巨型设施地图
-const SPACE_MASS = 600;              // 恒星级：切到宇宙
+const SPACE_MASS = 650;              // 大陆级阶段大幅缩短（1200 → 650）
 const UNIT_M = 0.22;                 // 1 世界单位 ≈ 0.22 米
-const BASE_H = 30, START_MASS = 1;   // 起始身高 30 单位 ≈ 6.6 m
+const BASE_H = 60, START_MASS = 1;   // 起始身高 60 单位（相对城市建筑比原来大一倍）
+/* 视野倍数：1.7 = 比最初多看到 70% 的范围（角色世界尺寸已翻倍，屏幕像素反而更大） */
+const VIEW_OUT = 1.7;
+const CHAR_GAIN = 2.0;               // 相机目标屏高倍数：配合角色世界尺寸翻倍，精确落到"视野 ×1.5"
+const CITY_SHRINK = 0.62;            // 城市建筑整体缩小：开局巨兽相对建筑更大
+const MACRO_SHRINK = 0.5;            // 海岛大陆整体缩小一半：山脉级/大陆级的体型比例翻倍
 const hOf = (m) => BASE_H * Math.pow(Math.max(0.34, m), 0.82);
 const speedOf = (m) => 210 * Math.pow(hOf(m) / BASE_H, 0.72);   // 巨兽步幅：绝对速度随体型快速提升
 const TIERS = [
   [1.6, '幼兽'], [3, '街区恶犬'], [5.5, '楼宇破坏者'], [9, '城市巨影'], [15, '都市主宰'],
-  [24, '传说巨兽'], [45, '山脉级'], [90, '大陆级'], [200, '行星级'], [600, '恒星级'],
-  [2000, '星系级'], [8000, '星团级'], [30000, '宇宙级'], [1e9, '无限之影']
+  [24, '传说巨兽'], [45, '山脉级'], [90, '大陆级'], [200, '行星级'],
+  // 星系级 = 进入宇宙的那一刻（恒星级已删除，中间不再有多余档位）
+  [SPACE_MASS, '星系级'], [SPACE_MASS * 6.2, '星团级'], [30000, '宇宙级'], [1e9, '无限之影']
 ];
 
 /* 可选外部音效：把 mp3 放进 assets/sfx/ 就会自动替代合成音
@@ -427,6 +441,38 @@ function placeOK(x, y, w, d, gap) {
   return true;
 }
 function placeAdd(x, y, w, d) { placedRects.push({ x: x, y: y, w: w, d: d }); }
+/* 空间网格放置器：天体数量多时也能快速做重叠检测（避免星系互相叠在一起） */
+function makePlacer(cell) {
+  const g = new Map();
+  const K = (i, j) => (i + 8192) * 16384 + (j + 8192);   // 加偏移：避免负坐标时键值互相碰撞
+  return {
+    fits: function (x, y, w, d, gap) {
+      const i0 = Math.floor((x - w / 2 - gap) / cell), i1 = Math.floor((x + w / 2 + gap) / cell);
+      const j0 = Math.floor((y - d / 2 - gap) / cell), j1 = Math.floor((y + d / 2 + gap) / cell);
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const arr = g.get(K(i, j));
+        if (!arr) continue;
+        for (let q = 0; q < arr.length; q++) {
+          const o = arr[q];
+          if (Math.abs(x - o.x) < (w + o.w) / 2 + gap && Math.abs(y - o.y) < (d + o.d) / 2 + gap) return false;
+        }
+      }
+      return true;
+    },
+    add: function (x, y, w, d) {
+      // 大天体要登记进它覆盖的所有格子，否则小物体在它边缘时查不到
+      const i0 = Math.floor((x - w / 2) / cell), i1 = Math.floor((x + w / 2) / cell);
+      const j0 = Math.floor((y - d / 2) / cell), j1 = Math.floor((y + d / 2) / cell);
+      const o = { x: x, y: y, w: w, d: d };
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const k = K(i, j);
+        let arr = g.get(k);
+        if (!arr) { arr = []; g.set(k, arr); }
+        arr.push(o);
+      }
+    }
+  };
+}
 const particles = [], floaters = [], shocks = [], rings = [], stars = [], nebulas = [];
 const P = {
   x: 0, y: 0, vx: 0, vy: 0, mass: 1, face: 1, view: 'front', phase: 0, moving: false,
@@ -462,14 +508,15 @@ function spawnRival(i, massOverride, nameOverride) {
     mass: m, mass0: m, pal, name: nameOverride || pal.name, kind: pal.kind, idx: i,
     alive: true, state: 'hunt', cd: rand(0, 1), eatCd: 0, phase: rand(0, TAU),
     tx: 0, ty: 0, think: 0, view: 'front', face: 1, flash: 0, absorb: 0, wob: 0, glow: 0,
-    seed: rand(0, 100), stun: 0, pullT: 0, pullFrom: null, pullTo: null
+    seed: rand(0, 100), stun: 0, pullT: 0, pullFrom: null, pullTo: null,
+    atkCd: rand(1.5, 3.5), atkT: 0, atkFx: 0    // 攻击欲望更高：开局很快就想咬人
   });
 }
 /* ---------------- 宇宙关：踩星球与星系 ---------------- */
 const CELESTIAL = ['#5FA8D8', '#D8895F', '#8F7FD8', '#5FC9A0', '#D8C05F', '#D85F8A'];
 function generateSpace() {
   const ph = hOf(P.mass);
-  BLOCK = Math.max(BLOCK0 * CS, ph * 1.8);      // 天体间距也收紧，宇宙里不再空荡
+  BLOCK = Math.max(BLOCK0 * CS, ph * 0.9);      // 角色世界尺寸翻倍后同步减半，保持原有密度
   ROAD = 0;
   const COLS = 17, ROWS = 17;
   WORLD.w = WORLD.h = BLOCK * (COLS + 1);
@@ -484,18 +531,30 @@ function generateSpace() {
       c: pick(['rgba(90,140,220,.13)', 'rgba(160,90,200,.13)', 'rgba(70,190,190,.11)', 'rgba(220,120,150,.12)'])
     });
   }
-  // 天体：行星 / 气态巨星 / 恒星 / 星系
-  for (let i = 0; i < 760; i++) {
-    const r0 = Math.random();
-    const kind = r0 < 0.40 ? 'planet' : r0 < 0.68 ? 'gas' : r0 < 0.84 ? 'star' : 'galaxy';
-    const rr = (kind === 'galaxy' ? rand(1.0, 2.6) : kind === 'star' ? rand(0.3, 1.0) : rand(0.22, 1.05)) * ph;
-    const x = rand(0, WORLD.w), y = rand(0, WORLD.h);
-    if (Math.hypot(x - cx0, y - cy0) < ph * 1.6) continue;
+  // 天体：按图鉴种类生成（第一阶段=太阳系天体，第二阶段=深空天体图鉴）
+  // 天体：单一宇宙阶段，图鉴里的天体混合出现
+  const kindTable = SPACE_KINDS;
+  const nBody = 700;
+  const placer = makePlacer(ph * 3);
+  for (let i = 0; i < nBody; i++) {
+    const kind = pickKind(kindTable);
+    const rr = bodyRadius(kind, ph);
+    const w = rr * 2, d = rr * 2;
+    let x = 0, y = 0, found = false;
+    for (let k = 0; k < 26; k++) {
+      x = rand(rr, WORLD.w - rr); y = rand(rr, WORLD.h - rr);
+      if (Math.hypot(x - cx0, y - cy0) < ph * 1.6 + rr) continue;
+      if (!placer.fits(x, y, w, d, ph * 0.1)) continue;
+      found = true; break;
+    }
+    if (!found) continue;
+    placer.add(x, y, w, d);
     const hp = 22 + rr * 0.85;
     buildings.push({
-      x, y, w: rr * 2, d: rr * 2, h: rr, hp, maxHp: hp, dead: false, seed: rand(0, 999),
-      fire: 0, fall: 0, ruined: 0, win: 0, celestial: kind, ring: kind === 'planet' && Math.random() < 0.4,
-      spin: rand(-0.5, 0.5), color: kind === 'star' ? pick(['#FFE08A', '#FFC46A', '#FFD9F0']) : pick(CELESTIAL)
+      x, y, w, d, h: rr, hp, maxHp: hp, dead: false, seed: rand(0, 999),
+      fire: 0, fall: 0, ruined: 0, win: 0, celestial: kind,
+      ring: kind === 'saturn' || kind === 'uranus',
+      spin: rand(-0.5, 0.5), color: (BODY_INFO[kind] || { color: '#5FA8D8' }).color
     });
   }
   // 小行星带（=城市里的人）与星舰
@@ -534,56 +593,166 @@ function generateSpace() {
   }
   worldReady = true;
 }
-/* ---------------- 巨型地貌关：山脉 + 大型设施（机场 / 体育场 / 光伏 / megatower） ---------------- */
+/* ---------------- 巨型地貌关：海岛大陆（海洋 + 沙滩 + 草原 + 森林 + 雪山 + 河流湖泊） ---------------- */
 const FEATURE_COLORS = ['#9AA7B0', '#B7A98F', '#8FA3B8', '#C2B49A'];
+let island = null, lakes = [];
+/* 海岸线：多频正弦叠加 → 自然不规则的岛形 */
+function islandRadius(a, seed) {
+  return 1 + 0.17 * Math.sin(3 * a + seed) + 0.115 * Math.sin(5 * a + seed * 1.7)
+    + 0.07 * Math.sin(8 * a + seed * 2.3) + 0.045 * Math.sin(13 * a + seed * 0.7);
+}
+function islandPath(cx, cy, R, seed, k, squash) {
+  squash = squash === undefined ? 0.9 : squash;
+  const N = 84;
+  ctx.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const a = i / N * TAU;
+    const rr = R * k * islandRadius(a, seed);
+    const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * squash;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+/* 某点是否在陆地上（用于把设施/森林放到陆地上） */
+function landAt(x, y) {
+  if (!island) return true;
+  const dx = (x - island.cx) / island.R, dy = (y - island.cy) / (island.R * 0.9);
+  const d = Math.hypot(dx, dy);
+  if (d < 1.15) {
+    const a = Math.atan2(dy, dx);
+    if (d < islandRadius(a, island.seed) * 0.97) return true;
+  }
+  for (const s of island.sub) {
+    const dd = Math.hypot((x - s.x) / s.r, (y - s.y) / (s.r * 0.9));
+    if (dd < islandRadius(Math.atan2(y - s.y, x - s.x), s.seed) * 0.9) return true;
+  }
+  return false;
+}
 function generateMacro() {
-  const ph = hOf(P.mass);
-  BLOCK = Math.max(BLOCK0 * CS, ph * 2.0);      // 间距按体型给，视野里保持足够密度
+  const ph = hOf(P.mass) * MACRO_SHRINK;   // 世界整体缩小 → 山脉级/大陆级的"体型比例"翻倍
+  BLOCK = Math.max(BLOCK0 * CS, ph * 1.0);      // 角色世界尺寸翻倍后同步减半，视野里密度不变
   ROAD = 0;
-  const COLS = 15, ROWS = 15;
+  const COLS = 17, ROWS = 17;        // 海岛大陆（比城区大，但不过分拉长流程）
   WORLD.w = WORLD.h = BLOCK * (COLS + 1);
   const cx0 = WORLD.w / 2, cy0 = WORLD.h / 2;
-  for (let i = 0; i < COLS; i++) for (let j = 0; j < ROWS; j++) {
-    const x0 = i * BLOCK, y0 = j * BLOCK;
-    // 统一草坪：只用两种很接近的草色做细微差别，不再用不同颜色的地块
-    const grass = h1(i * 7.3 + j * 3.1, 1) > 0.5 ? 'plain' : 'plain2';
-    blocks.push({ x: x0, y: y0, w: BLOCK, h: BLOCK, park: false, terrain: grass, cx: x0 + BLOCK / 2, cy: y0 + BLOCK / 2 });
-    const n = randInt(2, 6);                      // 草地上零散的树
-    for (let k = 0; k < n; k++) trees.push(newTree(rand(x0 + 40, x0 + BLOCK - 40), rand(y0 + 40, y0 + BLOCK - 40)));
+
+  // 主岛 + 离岸小岛（小岛必须与主岛海岸留出深水间隙，彼此也不重叠）
+  island = { cx: cx0, cy: cy0, R: WORLD.w * 0.34, seed: rand(0, TAU), sub: [] };
+  const wantSub = randInt(5, 8);
+  for (let t = 0; t < 200 && island.sub.length < wantSub; t++) {
+    const a = rand(0, TAU);
+    const rr = island.R * rand(0.05, 0.11);
+    const coast = island.R * Math.max(1, islandRadius(a, island.seed));
+    const dd = coast + rr * 1.4 + island.R * 0.03;
+    const x = cx0 + Math.cos(a) * dd, y = cy0 + Math.sin(a) * dd * 0.9;
+    if (x - rr < WORLD.w * 0.03 || x + rr > WORLD.w * 0.97) continue;
+    if (y - rr < WORLD.h * 0.03 || y + rr > WORLD.h * 0.97) continue;
+    let clash = false;
+    for (const s of island.sub) if (Math.hypot(s.x - x, s.y - y) < s.r + rr + island.R * 0.05) { clash = true; break; }
+    if (clash) continue;
+    island.sub.push({ x: x, y: y, r: rr, seed: rand(0, TAU) });
   }
-  // 偶尔出现的河流：几条横贯地图的蜿蜒水带
+  // 内陆湖泊
+  lakes = [];
+  const nLake = randInt(2, 4);
+  for (let k = 0; k < nLake; k++) {
+    const a = rand(0, TAU), dd = island.R * rand(0.15, 0.62);
+    lakes.push({
+      x: cx0 + Math.cos(a) * dd, y: cy0 + Math.sin(a) * dd * 0.9,
+      rx: island.R * rand(0.05, 0.12), ry: island.R * rand(0.04, 0.1), seed: rand(0, TAU)
+    });
+  }
+
+  // 地块：草坪 / 森林（森林是成片的密林）
+  for (let i = 0; i < COLS; i++) for (let j = 0; j < ROWS; j++) {
+    const x0 = i * BLOCK, y0 = j * BLOCK, cx = x0 + BLOCK / 2, cy = y0 + BLOCK / 2;
+    const onLand = landAt(cx, cy);
+    const forest = onLand && h1(i * 7.3 + j * 3.1, 2) > 0.62;
+    const grass = forest ? 'forest' : (h1(i * 7.3 + j * 3.1, 1) > 0.5 ? 'plain' : 'plain2');
+    blocks.push({ x: x0, y: y0, w: BLOCK, h: BLOCK, park: forest, terrain: grass, cx: cx, cy: cy });
+    if (!onLand) continue;
+    if (forest) {
+      const n = randInt(13, 22);                 // 密林（数量略降，绘制更省）
+      for (let k = 0; k < n; k++) {
+        const tx = rand(x0 + BLOCK * 0.08, x0 + BLOCK * 0.92), ty = rand(y0 + BLOCK * 0.08, y0 + BLOCK * 0.92);
+        if (landAt(tx, ty)) trees.push(newTree(tx, ty));
+      }
+    } else {
+      const n = randInt(1, 4);                   // 草原上零散的树
+      for (let k = 0; k < n; k++) {
+        const tx = rand(x0 + BLOCK * 0.12, x0 + BLOCK * 0.88), ty = rand(y0 + BLOCK * 0.12, y0 + BLOCK * 0.88);
+        if (landAt(tx, ty)) trees.push(newTree(tx, ty));
+      }
+    }
+  }
+  // 先把湖与河道登记成"水域"，树木/车辆/集装箱都不许落在里面
+  const inLake0 = (x, y) => lakes.some(function (L) { return Math.hypot((x - L.x) / L.rx, (y - L.y) / L.ry) < 1.45; });
+  // 点到线段的距离：河流是折线，必须按线段判定
+  const segDist = (px, py, ax, ay, bx, by) => {
+    const vx = bx - ax, vy = by - ay;
+    const L2 = vx * vx + vy * vy;
+    let t = L2 > 0 ? ((px - ax) * vx + (py - ay) * vy) / L2 : 0;
+    t = clamp(t, 0, 1);
+    return Math.hypot(px - (ax + vx * t), py - (ay + vy * t));
+  };
+  const inRiver0 = (x, y, pad) => rivers.some(function (rv) {
+    for (let i = 0; i < rv.pts.length - 1; i++) {
+      const w = (rv.ws ? (rv.ws[i] + rv.ws[i + 1]) * 0.5 : rv.w) * 0.6 + (pad || 0);
+      if (segDist(x, y, rv.pts[i].x, rv.pts[i].y, rv.pts[i + 1].x, rv.pts[i + 1].y) < w) return true;
+    }
+    return false;
+  });
+
+  // 河流：从内陆/湖泊蜿蜒流向海岸
   rivers.length = 0;
-  const nRiver = randInt(2, 3);
+  const nRiver = randInt(3, 4);
   for (let k = 0; k < nRiver; k++) {
-    const horiz = Math.random() < 0.5;
+    const a0 = rand(0, TAU);
+    const sx = cx0 + Math.cos(a0) * island.R * rand(0.1, 0.45);
+    const sy = cy0 + Math.sin(a0) * island.R * rand(0.1, 0.45) * 0.9;
+    const aEnd = a0 + rand(-0.9, 0.9);
+    const ex = cx0 + Math.cos(aEnd) * island.R * 1.05;
+    const ey = cy0 + Math.sin(aEnd) * island.R * 1.05 * 0.9;
     const pts = [];
-    const steps = 14;
-    const base = rand(0.18, 0.82) * (horiz ? WORLD.h : WORLD.w);
-    const amp = BLOCK * rand(0.5, 1.4), ph2 = rand(0, TAU);
+    const ws = [];
+    const steps = 20;
+    const wob = rand(0, TAU);
+    const wSrc = BLOCK * rand(0.06, 0.1), wMouth = BLOCK * rand(0.2, 0.3);
     for (let s = 0; s <= steps; s++) {
       const t = s / steps;
-      const along = t * (horiz ? WORLD.w : WORLD.h);
-      const off = base + Math.sin(ph2 + t * rand(2.2, 3.6)) * amp;
-      pts.push(horiz ? { x: along, y: off } : { x: off, y: along });
+      const bx = lerp(sx, ex, t), by = lerp(sy, ey, t);
+      const nx = -(ey - sy), ny = (ex - sx);
+      const nl = Math.hypot(nx, ny) || 1;
+      const off = Math.sin(wob + t * rand(3.2, 5.0)) * BLOCK * 0.9 * (1 - t * 0.35);
+      pts.push({ x: bx + nx / nl * off, y: by + ny / nl * off });
+      ws.push(lerp(wSrc, wMouth, Math.pow(t, 0.75)));   // 越往下游越宽
     }
-    rivers.push({ pts, w: BLOCK * rand(0.16, 0.3) });
+    rivers.push({ pts: pts, ws: ws, w: wMouth });
   }
-  const kinds = ['mountain', 'megatower', 'airport', 'stadium', 'solar', 'mountain', 'megatower', 'mountain'];
-  // 放置时做重叠检测：建筑/山体/微缩城市之间绝不交叠
+  // 清掉长在湖里/河道里的树
+  for (let i = trees.length - 1; i >= 0; i--) {
+    const t = trees[i];
+    if (inLake0(t.x, t.y) || inRiver0(t.x, t.y)) trees.splice(i, 1);
+  }
+
+  const kinds = ['megatower', 'stadium', 'solar', 'megatower'];
+  // 放置时做重叠检测：设施/山体/微缩城市之间绝不交叠，且都落在陆地上
   const fits = (x, y, w, d, gap) => placeOK(x, y, w, d, gap);
-  for (let i = 0; i < 150; i++) {
-    const feature = pick(kinds);
-    let w, d, hgt;
-    if (feature === 'mountain') { w = rand(1.0, 2.4) * ph; d = rand(0.9, 2.0) * ph; hgt = rand(0.45, 1.2) * ph; }
-    else if (feature === 'megatower') { w = rand(0.22, 0.45) * ph; d = rand(0.22, 0.45) * ph; hgt = rand(0.4, 0.9) * ph; }
-    else if (feature === 'airport') { w = rand(1.8, 2.8) * ph; d = rand(0.6, 1.0) * ph; hgt = 0.07 * ph; }
-    else if (feature === 'stadium') { w = rand(0.7, 1.1) * ph; d = rand(0.6, 0.9) * ph; hgt = 0.10 * ph; }
-    else { w = rand(0.9, 1.5) * ph; d = rand(0.6, 1.0) * ph; hgt = 0.035 * ph; }
+  const inLake = (x, y) => inLake0(x, y);
+  const onRiver = (x, y) => inRiver0(x, y, BLOCK * 0.16);
+  const freeSpot = (x, y, w, d, gap) => landFits(x, y, w, d) && !inLake(x, y) && !onRiver(x, y) && fits(x, y, w, d, gap);
+
+  // 先保证放下 2~4 座机场（地面车辆依赖它们活动）
+  const nAir = randInt(2, 4);
+  for (let i = 0; i < nAir; i++) {
+    const w = rand(1.8, 2.8) * ph, d = rand(0.6, 1.0) * ph, hgt = 0.07 * ph;
     let x = 0, y = 0, found = false;
-    for (let k = 0; k < 26; k++) {
-      x = rand(BLOCK * 0.7, WORLD.w - BLOCK * 0.7); y = rand(BLOCK * 0.7, WORLD.h - BLOCK * 0.7);
+    for (let k = 0; k < 80; k++) {
+      x = rand(BLOCK * 0.8, WORLD.w - BLOCK * 0.8); y = rand(BLOCK * 0.8, WORLD.h - BLOCK * 0.8);
+      if (!landFits(x, y, w, d)) continue;
+      if (inLake(x, y) || onRiver(x, y)) continue;
       if (Math.hypot(x - cx0, y - cy0) < ph * 2.2) continue;
-      if (!fits(x, y, w, d, ph * 0.28)) continue;
+      if (!fits(x, y, w, d, ph * 0.2)) continue;
       found = true; break;
     }
     if (!found) continue;
@@ -591,20 +760,113 @@ function generateMacro() {
     const hp = 26 + (w + d) * 0.06;
     buildings.push({
       x, y, w, d, h: hgt, hp, maxHp: hp, dead: false, seed: rand(0, 999), fire: 0, ruined: 0, win: 0,
-      feature, color: pick(FEATURE_COLORS), snowy: Math.random() < 0.5
+      feature: 'airport', color: pick(FEATURE_COLORS), snowy: false
     });
   }
-  // 微缩城市：填补空旷草地，让巨兽脚下到处都是成片的小城市
-  for (let i = 0; i < 110; i++) {
-    const w = rand(0.9, 1.9) * ph, d = rand(0.9, 1.9) * ph;
+  // 占地必须完整落在陆地上（中心 + 四角 + 四边中点都检测，避免楼盖到海里）
+  function landFits(x, y, w, d) {
+    const hw = w / 2, hd = d / 2;
+    const pts = [[0, 0], [-hw, 0], [hw, 0], [0, -hd], [0, hd], [-hw, -hd], [hw, -hd], [-hw, hd], [hw, hd]];
+    for (const p of pts) if (!landAt(x + p[0], y + p[1])) return false;
+    return true;
+  }
+  const pushMountain = (x, y, w, d, hgt, snowy) => {
+    placeAdd(x, y, w, d);
+    const hp = 26 + (w + d) * 0.06;
+    buildings.push({
+      x, y, w, d, h: hgt, hp, maxHp: hp, dead: false, seed: rand(0, 999), fire: 0, ruined: 0, win: 0,
+      feature: 'mountain', color: pick(FEATURE_COLORS), snowy: snowy
+    });
+  };
+  // 先造"山脉"：几条山脊线，沿脊线排布高低错落的山峰（像世界地图上的山脉）
+  const nRange = randInt(4, 6);
+  for (let k = 0; k < nRange; k++) {
+    const aa = rand(0, TAU), dd = island.R * rand(0.22, 0.66);
+    const rx = cx0 + Math.cos(aa) * dd, ry = cy0 + Math.sin(aa) * dd * 0.9;
+    if (!landAt(rx, ry) || inLake(rx, ry)) continue;
+    const ang = rand(0, TAU), len = island.R * rand(0.24, 0.5);
+    const n = randInt(3, 6);
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0.5 : i / (n - 1) - 0.5;
+      const mid = 1 - Math.abs(t) * 1.25;                 // 中间的主峰最高
+      const px = rx + Math.cos(ang) * len * t + rand(-1, 1) * BLOCK * 0.22;
+      const py = ry + Math.sin(ang) * len * t * 0.9 + rand(-1, 1) * BLOCK * 0.22;
+      const w = rand(1.0, 2.0) * ph * (0.78 + mid * 0.5);
+      const d = rand(0.85, 1.7) * ph * (0.78 + mid * 0.5);
+      const hgt = rand(0.65, 1.3) * ph * (0.8 + mid * 0.45);
+      if (!freeSpot(px, py, w, d, ph * 0.1)) continue;
+      pushMountain(px, py, w, d, hgt, mid > 0.35 || Math.random() < 0.5);
+    }
+    // 山脚丘陵
+    for (let i = 0; i < randInt(2, 5); i++) {
+      const t = rand(-0.75, 0.75);
+      const px = rx + Math.cos(ang) * len * t + rand(-1, 1) * BLOCK * 0.5;
+      const py = ry + Math.sin(ang) * len * t * 0.9 + rand(-1, 1) * BLOCK * 0.5;
+      const w = rand(0.5, 1.1) * ph, d = rand(0.45, 0.95) * ph;
+      if (!freeSpot(px, py, w, d, ph * 0.08)) continue;
+      placeAdd(px, py, w, d);
+      const hp = 26 + (w + d) * 0.06;
+      buildings.push({
+        x: px, y: py, w: w, d: d, h: rand(0.1, 0.26) * ph, hp, maxHp: hp, dead: false, seed: rand(0, 999),
+        fire: 0, ruined: 0, win: 0, feature: 'hill', color: pick(FEATURE_COLORS), snowy: false
+      });
+    }
+  }
+  // 再撒一些孤立小山与丘陵，避免大陆太平
+  for (let i = 0; i < 60; i++) {
+    const lone = Math.random() < 0.4;
+    const w = (lone ? rand(0.8, 1.7) : rand(0.5, 1.0)) * ph, d = (lone ? rand(0.7, 1.4) : rand(0.45, 0.9)) * ph;
     let x = 0, y = 0, found = false;
-    for (let k = 0; k < 26; k++) {
+    for (let k = 0; k < 24; k++) {
+      x = rand(BLOCK * 0.7, WORLD.w - BLOCK * 0.7); y = rand(BLOCK * 0.7, WORLD.h - BLOCK * 0.7);
+      if (Math.hypot(x - cx0, y - cy0) < ph * 2.2) continue;
+      if (!freeSpot(x, y, w, d, ph * 0.22)) continue;
+      found = true; break;
+    }
+    if (!found) continue;
+    if (lone) pushMountain(x, y, w, d, rand(0.5, 1.05) * ph, Math.random() < 0.5);
+    else {
+      placeAdd(x, y, w, d);
+      const hp = 26 + (w + d) * 0.06;
+      buildings.push({
+        x, y, w, d, h: rand(0.1, 0.24) * ph, hp, maxHp: hp, dead: false, seed: rand(0, 999),
+        fire: 0, ruined: 0, win: 0, feature: 'hill', color: pick(FEATURE_COLORS), snowy: false
+      });
+    }
+  }
+  for (let i = 0; i < 150; i++) {
+    const feature = pick(kinds);
+    let w, d, hgt;
+    if (feature === 'megatower') { w = rand(0.22, 0.45) * ph; d = rand(0.22, 0.45) * ph; hgt = rand(0.4, 0.9) * ph; }
+    else if (feature === 'stadium') { w = rand(0.7, 1.1) * ph; d = rand(0.6, 0.9) * ph; hgt = 0.10 * ph; }
+    else { w = rand(0.9, 1.5) * ph; d = rand(0.6, 1.0) * ph; hgt = 0.035 * ph; }
+    let x = 0, y = 0, found = false;
+    for (let k = 0; k < 30; k++) {
+      x = rand(BLOCK * 0.7, WORLD.w - BLOCK * 0.7); y = rand(BLOCK * 0.7, WORLD.h - BLOCK * 0.7);
+      if (!landFits(x, y, w, d)) continue;                                   // 必须在内陆
+      if (Math.hypot(x - cx0, y - cy0) < ph * 2.2) continue;          // 出生点周围留空
+      if (inLake(x, y) || onRiver(x, y)) continue;
+      if (!fits(x, y, w, d, ph * 0.3)) continue;
+      found = true; break;
+    }
+    if (!found) continue;
+    placeAdd(x, y, w, d);
+    const hp = 26 + (w + d) * 0.06;
+    buildings.push({
+      x, y, w, d, h: hgt, hp, maxHp: hp, dead: false, seed: rand(0, 999), fire: 0, ruined: 0, win: 0,
+      feature, color: pick(FEATURE_COLORS), snowy: false
+    });
+  }
+  // 微缩城市：铺在草原上，让巨兽脚下到处都是成片的小城市
+  for (let i = 0; i < 300; i++) {
+    const w = rand(0.7, 1.5) * ph, d = rand(0.7, 1.5) * ph;
+    let x = 0, y = 0, found = false;
+    for (let k = 0; k < 30; k++) {
       x = rand(BLOCK * 0.6, WORLD.w - BLOCK * 0.6); y = rand(BLOCK * 0.6, WORLD.h - BLOCK * 0.6);
+      if (!landFits(x, y, w, d)) continue;
       if (Math.hypot(x - cx0, y - cy0) < ph * 1.6) continue;
-      let onRiver = false;
-      for (const rv of rivers) for (const pt of rv.pts) if (Math.hypot(pt.x - x, pt.y - y) < BLOCK * 0.45) onRiver = true;
-      if (onRiver) continue;
-      if (!fits(x, y, w, d, ph * 0.16)) continue;
+      if (inLake(x, y) || onRiver(x, y)) continue;
+      if (!fits(x, y, w, d, ph * 0.1)) continue;
       found = true; break;
     }
     if (!found) continue;
@@ -615,35 +877,83 @@ function generateMacro() {
       feature: 'microcity', color: pick(FEATURE_COLORS), snowy: false
     });
   }
-  // 车辆 / 卡车 / 飞机（= 城市关里的行人）
-  const nVeh = Math.min(600, Math.round(200 * Math.pow(Math.max(1, CS), 0.5)));
-  for (let k = 0; k < nVeh; k++) {
+  // 车辆 / 卡车 / 飞机（= 城市关里的行人）—— 除飞机外都必须落在陆地上，不能下水
+  const onWater = (x, y) => !landAt(x, y) || inLake(x, y) || onRiver(x, y);
+  const drySpot = (pad) => {
+    for (let t = 0; t < 40; t++) {
+      const x = rand(pad, WORLD.w - pad), y = rand(pad, WORLD.h - pad);
+      if (!onWater(x, y)) return { x: x, y: y };
+    }
+    return null;
+  };
+  // 地面车辆：只在机场周边的环带里活动（不压机场、不下水）；飞机可自由飞越
+  const airports = buildings.filter(function (b) { return b.feature === 'airport'; });
+  const wetTest = (x, y) => !landAt(x, y) || inLake0(x, y) || inRiver0(x, y, BLOCK * 0.1);
+  for (const ap of airports) {
+    const R0 = Math.max(ap.w, ap.d) * 0.62;
+    const n = randInt(14, 22);
+    for (let k = 0; k < n; k++) {
+      let spot = null;
+      for (let t = 0; t < 30; t++) {
+        const a = rand(0, TAU), rr = R0 * rand(1.3, 2.3);
+        const x = ap.x + Math.cos(a) * rr, y = ap.y + Math.sin(a) * rr * 0.85;
+        if (x < 60 || y < 60 || x > WORLD.w - 60 || y > WORLD.h - 60) continue;
+        if (wetTest(x, y)) continue;
+        spot = { x: x, y: y }; break;
+      }
+      if (!spot) continue;
+      const p = newPerson(spot.x, spot.y);
+      p.sc = Math.max(1.6, CS * 1.1);
+      p.kind = pick(['car', 'car', 'truck']);
+      p.spd = rand(60, 120) * p.sc * 0.35;
+      p.home = { x: ap.x, y: ap.y, w: ap.w, d: ap.d, r: R0 * 2.2 };
+      p.wetTest = wetTest;
+      people.push(p);
+    }
+  }
+  // 飞机：自由飞行（不占陆地）
+  const nPlane = Math.min(70, Math.round(24 * Math.pow(Math.max(1, CS), 0.5)));
+  for (let k = 0; k < nPlane; k++) {
     const p = newPerson(rand(200, WORLD.w - 200), rand(200, WORLD.h - 200));
-    p.sc = Math.max(1.6, CS * 1.1);
-    p.kind = pick(['car', 'car', 'truck', 'plane']);
+    p.sc = Math.max(1.6, CS * 1.1); p.kind = 'plane';
     p.spd = rand(60, 120) * p.sc * 0.35;
     people.push(p);
   }
-  // 集装箱 / 油罐（= 食物）
+  // 集装箱 / 油罐（= 食物）—— 只在陆地
   const cSc = Math.max(2, CS * 1.4);
   for (let k = 0; k < 90; k++) {
-    foods.push({ x: rand(240, WORLD.w - 240), y: rand(240, WORLD.h - 240), type: pick(['meat', 'burger', 'cake', 'soda']), eaten: false, phase: rand(0, TAU), sc: cSc });
+    const spot = drySpot(240);
+    if (!spot) continue;
+    foods.push({ x: spot.x, y: spot.y, type: pick(['meat', 'burger', 'cake', 'soda']), eaten: false, phase: rand(0, TAU), sc: cSc });
   }
-  // 公路上的车流
-  for (let k = 0; k < 40; k++) {
-    cars.push({
-      x: rand(200, WORLD.w - 200), y: rand(200, WORLD.h - 200), dir: randInt(0, 3),
-      spd: rand(80, 170) * Math.max(1, CS) * 0.7, color: pick(['#E86A6A', '#5CA8E8', '#E8C85C', '#8FE08F', '#D8D8E0']),
-      alive: true, dead: 0, phase: rand(0, TAU), sc: Math.max(1.8, CS)
-    });
+  // 公路上的车流 —— 只在陆地，也在机场周边活动
+  for (const ap of airports) {
+    const R0 = Math.max(ap.w, ap.d) * 0.62;
+    for (let k = 0; k < 8; k++) {
+      let spot = null;
+      for (let t = 0; t < 20; t++) {
+        const a = rand(0, TAU), rr = R0 * rand(1.4, 2.6);
+        const x = ap.x + Math.cos(a) * rr, y = ap.y + Math.sin(a) * rr * 0.85;
+        if (wetTest(x, y)) continue;
+        spot = { x: x, y: y }; break;
+      }
+      if (!spot) continue;
+      cars.push({
+        x: spot.x, y: spot.y, dir: randInt(0, 3),
+        spd: rand(80, 170) * Math.max(1, CS) * 0.7, color: pick(['#E86A6A', '#5CA8E8', '#E8C85C', '#8FE08F', '#D8D8E0']),
+        alive: true, dead: 0, phase: rand(0, TAU), sc: Math.max(1.8, CS),
+        home: { x: ap.x, y: ap.y, w: ap.w, d: ap.d, r: R0 * 2.4 },
+        wetTest: wetTest, landTest: landAt
+      });
+    }
   }
   const rm = mode === 'endless' ? clamp(P.mass * rand(0.6, 1.2), 2, 1e12) : 0;
   spawnRival(0, rm || null); spawnRival(1, rm || null); spawnRival(2, rm || null);
   P.x = cx0; P.y = cy0 + ph * 1.5; P.vx = P.vy = 0;
-  for (let k = 0; k < 30; k++) {
+  for (let k = 0; k < 26; k++) {                    // 出生点附近：只放飞机，避免车辆下水
     const a = rand(0, TAU), rr = rand(1.2, 3.0) * ph;
     const p = newPerson(P.x + Math.cos(a) * rr, P.y + Math.sin(a) * rr);
-    p.sc = Math.max(1.6, CS * 1.1); p.kind = pick(['car', 'truck', 'plane']);
+    p.sc = Math.max(1.6, CS * 1.1); p.kind = 'plane';
     p.spd = rand(60, 120) * p.sc * 0.35;
     people.push(p);
   }
@@ -651,7 +961,7 @@ function generateMacro() {
 }
 function generateWorld() {
   buildings.length = people.length = foods.length = cars.length = trees.length = blocks.length = 0;
-  rivers.length = 0; placedRects = [];
+  rivers.length = 0; placedRects = []; island = null; lakes = [];
   rivals.length = 0; stars.length = 0; nebulas.length = 0;
   CS = cityScaleFor(P.mass);
   if (stage === 'space') return generateSpace();
@@ -698,8 +1008,9 @@ function generateWorld() {
       }
       placeAdd(bx, by, bw, bd);
       const t = Math.random();
-      // 楼高比街区长得慢：体型越大越容易“高人一头”，可以直接踩过去
-      const bhScale = Math.pow(CS, 0.85);
+      // 楼高比街区长得慢：体型越大越容易"高人一头"，可以直接踩过去
+      // CITY_SHRINK：城市整体缩小，让开局的巨兽"比例"更大（配合 BASE_H 翻倍）
+      const bhScale = Math.pow(CS, 0.85) * CITY_SHRINK;
       const bh = (t < 0.6 ? rand(48, 108) : t < 0.9 ? rand(108, 188) : rand(188, 300)) * bhScale;
       const hp = 16 + bh * 0.42;
       buildings.push({
@@ -749,15 +1060,26 @@ function generateWorld() {
 }
 /* 无尽模式：城区被推平后换一张更大的新城区（体型保留） */
 function refreshDistrict() {
+  camSnapNext = true;
+  // 已到达宇宙级：每次换图不再继续变大，而是缩回"刚到达宇宙级"时的体型
+  const capped = finalReached && P.mass > FINAL_MASS;
+  if (capped) { P.mass = FINAL_MASS; P.h = hOf(P.mass); }
   const keep = P.mass;
   generateWorld();
   P.mass = keep; P.h = hOf(P.mass);
   if (P.mass > stats.peak) stats.peak = P.mass;
   P.drainTarget = null; P.drainSet = null;
   particles.length = floaters.length = shocks.length = rings.length = decals.length = 0;
-  cam.x = P.x; cam.y = P.y - P.h * 0.5;
+  if (capped) {
+    // 立刻把角色与镜头安置到新地图中心，避免叠在建筑里
+    P.x = WORLD.w / 2; P.y = WORLD.h / 2; P.vx = P.vy = 0;
+    cam.x = P.x; cam.y = P.y - P.h * 0.5;
+    toast('<b>宇宙级封顶</b>：换图后体型回到 ' + FINAL_MASS + '，地图与位置已立刻刷新');
+  } else {
+    cam.x = P.x; cam.y = P.y - P.h * 0.5;
+    toast('新的城区出现 —— 城市尺度 ×' + CS.toFixed(1) + '，你的体型继续增长');
+  }
   buildRivalList();
-  toast('新的城区出现 —— 城市尺度 ×' + CS.toFixed(1) + '，你的体型继续增长');
 }
 function resetRun() {
   P.mass = START_MASS;
@@ -769,7 +1091,7 @@ function resetRun() {
   runTime = 0; shakeAmp = 0; flashV = 0;
   nextRivalAt = time + 8; rivalCount = 3;
   P.face = 1; P.view = 'front'; P.phase = 0; P.stompCd = P.stompT = P.eatCd = P.eatT = 0;
-  P.tongue = 0; P.drainTarget = null; P.drainSet = null; P.glow = 0; P.harm = 0; P.blinkT = 2.2; P.chew = 0; P.walkT = 0;
+  P.tongue = 0; P.drainTarget = null; P.drainSet = null; P.glow = 0; P.harm = 0; P.blinkT = 2.2; P.chew = 0; P.walkT = 0; P.eatCd = 0; P.eatT = 0;
   P.h = hOf(P.mass);
   cam.x = P.x; cam.y = P.y - P.h * 0.5; cam.zoom = 1.8;
   buildRivalList();
@@ -779,8 +1101,17 @@ function resetRun() {
 const cv = document.getElementById('game');
 const ctx = cv.getContext('2d');
 let VW = 0, VH = 0, DPR = 1;
+/* 画质档位：低画质时省掉高开销细节（移动端自动切换） */
+let lowQ = false, qFrames = 0, qSum = 0, camSnapNext = false;
+function adaptQuality(dt) {
+  qFrames++; qSum += dt;
+  if (qFrames < 45) return;
+  const avg = qSum / qFrames; qFrames = 0; qSum = 0;
+  if (!lowQ && avg > 0.024) lowQ = true;            // 平均帧时间 > 24ms → 降档
+  else if (lowQ && avg < 0.015) lowQ = false;       // 恢复到 15ms 以内 → 升档
+}
 function resize() {
-  DPR = Math.min(2, window.devicePixelRatio || 1);
+  DPR = Math.min(touchOn ? 1.5 : 2, window.devicePixelRatio || 1);
   VW = window.innerWidth; VH = window.innerHeight;
   cv.width = Math.floor(VW * DPR); cv.height = Math.floor(VH * DPR);
   cv.style.width = VW + 'px'; cv.style.height = VH + 'px';
@@ -790,7 +1121,8 @@ window.addEventListener('resize', resize);
 window.addEventListener('keydown', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key.toLowerCase();
   if (k === ' ' || k.indexOf('arrow') === 0) e.preventDefault();
-  if (state === 'ending') { hideEnding(); return; }
+  if (state === 'ending') { if (time - endingAt > 1.6) hideEnding(); return; }   // 1.6 秒保护期，避免长按的按键立刻把终章关掉
+  if (k === 'escape' && state === 'paused') { backToMenu(); return; }
   if (keys[k]) return;
   keys[k] = true;
   if (k === 'p') togglePause();
@@ -805,7 +1137,8 @@ window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; }
 cv.addEventListener('mousedown', (e) => {
   e.preventDefault();
   if (touchOn) return;                       // 触屏时由虚拟按键负责，避免重复触发
-  if (state === 'playing') doStomp(); else if (state === 'ending') hideEnding();
+  if (state === 'playing') doStomp();
+  else if (state === 'ending' && time - endingAt > 1.6) hideEnding();
 });
 cv.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -1247,6 +1580,113 @@ function drawSpace() {
   }
   ctx.globalAlpha = 1;
 }
+/* ============================ 宇宙天体（按图鉴绘制） ============================
+   图鉴种类：恒星(太阳) / 气态巨行星(木星) / 环行星(土星) / 类地行星(地球·火星·水星·金星)
+   卫星(月球) / 冰巨星(海王星·天王星) / 螺旋·棒旋·椭圆·不规则星系 / 彗星 / 小行星 / 流星
+   黑洞 / 星云 / 白矮星 / 红矮星 / 蓝巨星 / 脉冲星 / 超新星 / 矮行星 */
+const BODY_INFO = {
+  star:       { name: '恒星', color: '#FFD24A' },
+  gas:        { name: '气态巨行星', color: '#D8B183' },
+  saturn:     { name: '环行星', color: '#E4C88A' },
+  earth:      { name: '类地行星', color: '#3E7FD0' },
+  mars:       { name: '类地行星', color: '#C1552F' },
+  mercury:    { name: '类地行星', color: '#9A9188' },
+  venus:      { name: '类地行星', color: '#E0C98A' },
+  moon:       { name: '卫星', color: '#B8B6B2' },
+  neptune:    { name: '冰巨星', color: '#3A6FD8' },
+  uranus:     { name: '冰巨星', color: '#8FE0E8' },
+  spiral:     { name: '螺旋星系', color: '#9FB6FF' },
+  barred:     { name: '棒旋星系', color: '#FFE0A8' },
+  elliptical: { name: '椭圆星系', color: '#FFE7B0' },
+  irregular:  { name: '不规则星系', color: '#C79BFF' },
+  comet:      { name: '彗星', color: '#BFE8FF' },
+  asteroid:   { name: '小行星', color: '#8A8398' },
+  meteor:     { name: '流星', color: '#FFB46A' },
+  blackhole:  { name: '黑洞', color: '#FF9A3C' },
+  nebulabody: { name: '星云', color: '#C77BFF' },
+  whitedwarf: { name: '白矮星', color: '#DCEBFF' },
+  reddwarf:   { name: '红矮星', color: '#FF6A4A' },
+  bluegiant:  { name: '蓝巨星', color: '#7FB8FF' },
+  pulsar:     { name: '脉冲星', color: '#B08FFF' },
+  supernova:  { name: '超新星', color: '#FFD9F0' },
+  pluto:      { name: '矮行星', color: '#C9B49A' },
+  galaxy:     { name: '螺旋星系', color: '#9FB6FF' },
+  planet:     { name: '类地行星', color: '#3E7FD0' }
+};
+/* 宇宙天体：单一阶段，图鉴里的天体全部混合出现 */
+const SPACE_KINDS = [
+  ['earth', 8], ['mars', 6], ['mercury', 5], ['venus', 5], ['gas', 9], ['saturn', 7],
+  ['neptune', 4], ['uranus', 4], ['moon', 6], ['star', 6], ['spiral', 9], ['barred', 6],
+  ['elliptical', 6], ['irregular', 6], ['blackhole', 6], ['pulsar', 5], ['supernova', 4],
+  ['nebulabody', 7], ['whitedwarf', 5], ['reddwarf', 5], ['bluegiant', 5], ['comet', 5],
+  ['meteor', 5], ['pluto', 5], ['asteroid', 7]
+];
+const SPACE1_KINDS = SPACE_KINDS;
+const SPACE2_KINDS = SPACE_KINDS;
+function pickKind(table) {
+  let tot = 0;
+  for (const t of table) tot += t[1];
+  let r = Math.random() * tot;
+  for (const t of table) { r -= t[1]; if (r <= 0) return t[0]; }
+  return table[table.length - 1][0];
+}
+function bodyRadius(kind, ph) {
+  switch (kind) {
+    case 'star': return rand(0.35, 0.95) * ph;
+    case 'bluegiant': return rand(0.45, 1.1) * ph;
+    case 'supernova': return rand(0.4, 0.9) * ph;
+    case 'blackhole': return rand(0.5, 1.2) * ph;
+    case 'spiral': case 'barred': return rand(0.85, 1.5) * ph;
+    case 'elliptical': return rand(0.7, 1.2) * ph;
+    case 'irregular': case 'nebulabody': return rand(0.7, 1.3) * ph;
+    case 'gas': case 'saturn': return rand(0.5, 1.0) * ph;
+    case 'moon': case 'mercury': case 'pluto': case 'asteroid': return rand(0.12, 0.34) * ph;
+    case 'reddwarf': case 'whitedwarf': return rand(0.16, 0.42) * ph;
+    case 'comet': case 'meteor': case 'pulsar': return rand(0.3, 0.8) * ph;
+    default: return rand(0.35, 1.05) * ph;
+  }
+}
+/* 通用：带光照与晨昏线的球体 */
+function sphereBase(x, y, R, color, big) {
+  if (big) {
+    ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fillStyle = color; ctx.fill();
+    return;
+  }
+  const g = ctx.createRadialGradient(x - R * 0.35, y - R * 0.4, R * 0.06, x, y, R * 1.05);
+  g.addColorStop(0, 'rgba(255,255,255,.95)');
+  g.addColorStop(0.16, color);
+  g.addColorStop(0.72, color);
+  g.addColorStop(1, 'rgba(6,5,14,.95)');
+  ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fillStyle = g; ctx.fill();
+}
+function sphereShade(x, y, R) {
+  const tg = ctx.createRadialGradient(x - R * 0.5, y - R * 0.5, R * 0.2, x + R * 0.35, y + R * 0.35, R * 1.45);
+  tg.addColorStop(0, 'rgba(0,0,0,0)');
+  tg.addColorStop(0.5, 'rgba(0,0,0,.14)');
+  tg.addColorStop(1, 'rgba(0,0,0,.72)');
+  ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fillStyle = tg; ctx.fill();
+}
+function craters(x, y, R, seed, n, col) {
+  for (let i = 0; i < n; i++) {
+    const a = h1(seed, i) * TAU, rr = R * (0.15 + h1(seed, i + 40) * 0.6);
+    const cx = x + Math.cos(a) * rr, cy = y + Math.sin(a) * rr;
+    const cr = R * (0.06 + h1(seed, i + 80) * 0.14);
+    ctx.beginPath(); ctx.arc(cx, cy, cr, 0, TAU);
+    ctx.fillStyle = 'rgba(40,36,44,.28)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx - cr * 0.25, cy - cr * 0.25, cr * 0.75, 0, TAU);
+    ctx.fillStyle = col || 'rgba(255,255,255,.12)'; ctx.fill();
+  }
+}
+function ringBands(x, y, R, tilt, colors) {
+  ctx.save();
+  ctx.translate(x, y); ctx.rotate(tilt);
+  for (let i = 0; i < colors.length; i++) {
+    const rx = R * (1.35 + i * 0.22), ry = rx * 0.26;
+    ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, TAU);
+    ctx.strokeStyle = colors[i][0]; ctx.lineWidth = Math.max(1.5, R * colors[i][1]); ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawCelestial(b) {
   const x = b.x, y = b.y, R = b.w / 2;
   const dmg = 1 - clamp(b.hp / b.maxHp, 0, 1);
@@ -1261,87 +1701,319 @@ function drawCelestial(b) {
     ctx.globalAlpha = 1;
     return;
   }
-  if (b.celestial === 'galaxy') {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(b.seed + time * 0.06 * (b.spin >= 0 ? 1 : -1));
-    for (let arm = 0; arm < 2; arm++) {
-      for (let i = 1; i <= 24; i++) {
-        const t = i / 24, ang = arm * Math.PI + t * 2.7, rr = R * t;
-        ctx.globalAlpha = (0.55 - t * 0.35) * (1 - dmg * 0.4);
-        ctx.beginPath();
-        ctx.arc(Math.cos(ang) * rr, Math.sin(ang) * rr * 0.44, R * (0.15 - t * 0.07) + 2, 0, TAU);
-        ctx.fillStyle = b.color; ctx.fill();
-      }
-    }
-    ctx.globalAlpha = 1;
-    const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.34);
-    cg.addColorStop(0, '#FFF8E0'); cg.addColorStop(1, 'rgba(255,240,200,0)');
-    ctx.beginPath(); ctx.arc(0, 0, R * 0.34, 0, TAU); ctx.fillStyle = cg; ctx.fill();
-    // 尘埃带
-    ctx.beginPath();
-    ctx.ellipse(0, 0, R * 0.7, R * 0.15, 0.42, 0, TAU);
-    ctx.strokeStyle = 'rgba(8,4,18,.45)'; ctx.lineWidth = R * 0.13; ctx.stroke();
-    // 晕星
-    for (let i = 0; i < 44; i++) {
-      const a = h1(b.seed, i) * TAU, rr = R * (0.25 + h1(b.seed, i + 50) * 1.15);
-      ctx.globalAlpha = 0.2 + h1(b.seed, i + 90) * 0.45;
-      ctx.beginPath(); ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * 0.78, R * 0.014, 0, TAU);
-      ctx.fillStyle = '#DCE8FF'; ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    ctx.restore();
-    return;
-  }
-  if (b.celestial === 'star') {
-    if (R * cam.zoom > 1600) {
-      ctx.beginPath(); ctx.arc(x, y, R * 1.6, 0, TAU); ctx.fillStyle = b.color; ctx.fill();
-      ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fillStyle = '#FFFDF0'; ctx.fill();
+  const big = R * cam.zoom > 1700;
+  const k = b.celestial;
+  const rot = b.seed + time * 0.06 * (b.spin >= 0 ? 1 : -1);
+
+  /* —— 恒星类（太阳 / 红矮星 / 蓝巨星 / 白矮星） —— */
+  if (k === 'star' || k === 'reddwarf' || k === 'bluegiant' || k === 'whitedwarf') {
+    const pal = k === 'reddwarf' ? ['#FFE3C8', '#FF7A4A', 'rgba(255,110,50,.35)']
+      : k === 'bluegiant' ? ['#EAF4FF', '#7FB8FF', 'rgba(110,170,255,.35)']
+        : k === 'whitedwarf' ? ['#FFFFFF', '#DCEBFF', 'rgba(200,225,255,.4)']
+          : ['#FFFDF0', b.color || '#FFD24A', 'rgba(255,190,90,.34)'];
+    if (big) {
+      ctx.beginPath(); ctx.arc(x, y, R * 1.5, 0, TAU); ctx.fillStyle = pal[1]; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fillStyle = pal[0]; ctx.fill();
       return;
     }
-    ctx.save();                                   // 日冕射线
-    ctx.translate(x, y); ctx.rotate(time * 0.05 + b.seed);
-    for (let i = 0; i < 12; i++) {
-      const a = i / 12 * TAU, len = R * (1.5 + 0.6 * h1(b.seed, i));
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(a - 0.05) * R * 0.9, Math.sin(a - 0.05) * R * 0.9);
-      ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
-      ctx.lineTo(Math.cos(a + 0.05) * R * 0.9, Math.sin(a + 0.05) * R * 0.9);
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(255,222,140,.16)'; ctx.fill();
+    if (k === 'star') {                      // 日冕射线
+      ctx.save(); ctx.translate(x, y); ctx.rotate(time * 0.05 + b.seed);
+      for (let i = 0; i < 12; i++) {
+        const a = i / 12 * TAU, len = R * (1.5 + 0.6 * h1(b.seed, i));
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a - 0.05) * R * 0.9, Math.sin(a - 0.05) * R * 0.9);
+        ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+        ctx.lineTo(Math.cos(a + 0.05) * R * 0.9, Math.sin(a + 0.05) * R * 0.9);
+        ctx.closePath();
+        ctx.fillStyle = k === 'star' ? 'rgba(255,222,140,.18)' : 'rgba(255,255,255,.1)';
+        ctx.fill();
+      }
+      ctx.restore();
     }
-    ctx.restore();
-    const g = ctx.createRadialGradient(x, y, R * 0.15, x, y, R * 2.2);
-    g.addColorStop(0, 'rgba(255,252,225,.98)');
-    g.addColorStop(0.2, b.color);
-    g.addColorStop(0.45, 'rgba(255,190,90,.32)');
-    g.addColorStop(1, 'rgba(255,140,40,0)');
-    ctx.beginPath(); ctx.arc(x, y, R * 2.2, 0, TAU); ctx.fillStyle = g; ctx.fill();
+    const g = ctx.createRadialGradient(x, y, R * 0.15, x, y, R * 2.4);
+    g.addColorStop(0, pal[0]); g.addColorStop(0.2, pal[1]);
+    g.addColorStop(0.5, pal[2]); g.addColorStop(1, 'rgba(255,140,40,0)');
+    ctx.beginPath(); ctx.arc(x, y, R * 2.4, 0, TAU); ctx.fillStyle = g; ctx.fill();
     ctx.beginPath(); ctx.arc(x, y, R * (1 + 0.03 * Math.sin(time * 3 + b.seed)), 0, TAU);
-    ctx.fillStyle = '#FFFDF0'; ctx.fill();
+    ctx.fillStyle = pal[0]; ctx.fill();
     return;
   }
-  // 行星 / 气态巨星
-  const huge = R * cam.zoom > 1600;                 // 屏幕上的超大天体直接用平涂，省掉全屏渐变
-  if (huge) {
-    ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fillStyle = b.color; ctx.fill();
-  } else {
-    const g2 = ctx.createRadialGradient(x - R * 0.35, y - R * 0.4, R * 0.08, x, y, R * 1.05);
-    g2.addColorStop(0, '#FFFFFF');
-    g2.addColorStop(0.16, b.color);
-    g2.addColorStop(0.72, b.color);
-    g2.addColorStop(1, 'rgba(6,5,14,.95)');
-    ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fillStyle = g2; ctx.fill();
+
+  /* —— 星系类（螺旋 / 棒旋 / 椭圆 / 不规则） —— */
+  if (k === 'spiral' || k === 'barred' || k === 'elliptical' || k === 'irregular' || k === 'galaxy') {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rot);
+    if (k === 'elliptical') {
+      const eg = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 1.25);
+      eg.addColorStop(0, '#FFF6D8'); eg.addColorStop(0.35, b.color || '#FFE7B0');
+      eg.addColorStop(0.75, 'rgba(255,220,150,.35)'); eg.addColorStop(1, 'rgba(255,200,120,0)');
+      ctx.beginPath(); ctx.ellipse(0, 0, R * 1.25, R * 0.85, 0, 0, TAU); ctx.fillStyle = eg; ctx.fill();
+      for (let i = 0; i < 60; i++) {
+        const a = h1(b.seed, i) * TAU, rr = R * (0.2 + h1(b.seed, i + 60) * 1.0);
+        ctx.globalAlpha = 0.25 + h1(b.seed, i + 120) * 0.4;
+        ctx.beginPath(); ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * 0.72, R * 0.02, 0, TAU);
+        ctx.fillStyle = '#FFF4D0'; ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    } else if (k === 'irregular') {
+      for (let i = 0; i < 7; i++) {
+        const a = h1(b.seed, i) * TAU, rr = R * (0.15 + h1(b.seed, i + 20) * 0.7);
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * rr, Math.sin(a) * rr * 0.8, R * (0.3 + h1(b.seed, i + 40) * 0.45), R * 0.26,
+          a, 0, TAU);
+        ctx.fillStyle = i % 2 ? 'rgba(199,155,255,.3)' : 'rgba(140,120,255,.24)'; ctx.fill();
+      }
+      const cg2 = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.4);
+      cg2.addColorStop(0, 'rgba(255,235,255,.85)'); cg2.addColorStop(1, 'rgba(200,150,255,0)');
+      ctx.beginPath(); ctx.arc(0, 0, R * 0.4, 0, TAU); ctx.fillStyle = cg2; ctx.fill();
+      for (let i = 0; i < 50; i++) {
+        const a = h1(b.seed, i) * TAU, rr = R * (0.1 + h1(b.seed, i + 70) * 1.1);
+        ctx.globalAlpha = 0.25 + h1(b.seed, i + 130) * 0.5;
+        ctx.beginPath(); ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * 0.85, R * 0.018, 0, TAU);
+        ctx.fillStyle = '#F0E4FF'; ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    } else {                                   // 螺旋 / 棒旋
+      const arms = k === 'barred' ? 2 : (b.seed > 400 ? 2 : 3);
+      for (let arm = 0; arm < arms; arm++) {
+        for (let i = 1; i <= 26; i++) {
+          const t = i / 26, ang = arm * (TAU / arms) + t * 2.9, rr = R * t;
+          ctx.globalAlpha = (0.6 - t * 0.4) * (1 - dmg * 0.4);
+          ctx.beginPath();
+          ctx.arc(Math.cos(ang) * rr, Math.sin(ang) * rr * 0.42, R * (0.16 - t * 0.08) + 2, 0, TAU);
+          ctx.fillStyle = k === 'barred' ? '#FFE0A8' : (b.color || '#9FB6FF'); ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+      if (k === 'barred') {                    // 中央棒
+        ctx.beginPath();
+        ctx.ellipse(0, 0, R * 0.62, R * 0.13, 0, 0, TAU);
+        ctx.fillStyle = 'rgba(255,232,180,.6)'; ctx.fill();
+      }
+      const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.34);
+      cg.addColorStop(0, '#FFF8E0'); cg.addColorStop(1, 'rgba(255,240,200,0)');
+      ctx.beginPath(); ctx.arc(0, 0, R * 0.34, 0, TAU); ctx.fillStyle = cg; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, 0, R * 0.72, R * 0.16, 0.42, 0, TAU);
+      ctx.strokeStyle = 'rgba(10,6,20,.42)'; ctx.lineWidth = R * 0.12; ctx.stroke();
+      for (let i = 0; i < 44; i++) {
+        const a = h1(b.seed, i) * TAU, rr = R * (0.25 + h1(b.seed, i + 50) * 1.15);
+        ctx.globalAlpha = 0.2 + h1(b.seed, i + 90) * 0.45;
+        ctx.beginPath(); ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * 0.78, R * 0.014, 0, TAU);
+        ctx.fillStyle = '#DCE8FF'; ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    return;
   }
+
+  /* —— 黑洞：黑盘 + 橙色吸积盘 —— */
+  if (k === 'blackhole') {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(b.seed * 0.3 + time * 0.02);
+    for (let i = 3; i >= 0; i--) {
+      const rr = R * (1.1 + i * 0.3);
+      ctx.beginPath(); ctx.ellipse(0, 0, rr, rr * 0.3, 0, 0, TAU);
+      ctx.strokeStyle = 'rgba(255,' + (120 + i * 30) + ',40,' + (0.5 - i * 0.1) + ')';
+      ctx.lineWidth = Math.max(2, R * (0.26 - i * 0.05)); ctx.stroke();
+    }
+    const hg = ctx.createRadialGradient(0, 0, R * 0.5, 0, 0, R * 1.5);
+    hg.addColorStop(0, 'rgba(255,170,70,0)'); hg.addColorStop(1, 'rgba(255,140,40,0)');
+    ctx.beginPath(); ctx.arc(0, 0, R * 1.5, 0, TAU); ctx.fillStyle = hg; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, R * 0.92, 0, TAU);
+    ctx.fillStyle = '#05040C'; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,200,120,.85)'; ctx.lineWidth = Math.max(2, R * 0.06); ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  /* —— 脉冲星：双极喷流 —— */
+  if (k === 'pulsar') {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(b.seed + time * 0.25);
+    for (const s of [1, -1]) {
+      const jg = ctx.createLinearGradient(0, 0, 0, s * R * 2.6);
+      jg.addColorStop(0, 'rgba(190,150,255,.75)'); jg.addColorStop(1, 'rgba(140,110,255,0)');
+      ctx.beginPath();
+      ctx.moveTo(-R * 0.16, 0); ctx.lineTo(R * 0.16, 0);
+      ctx.lineTo(R * 0.03, s * R * 2.6); ctx.lineTo(-R * 0.03, s * R * 2.6);
+      ctx.closePath(); ctx.fillStyle = jg; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, s * R * 0.75, R * 0.95, R * 0.24, 0, 0, TAU);
+      ctx.strokeStyle = 'rgba(200,170,255,.35)'; ctx.lineWidth = Math.max(1, R * 0.05); ctx.stroke();
+    }
+    ctx.restore();
+    const pg = ctx.createRadialGradient(x, y, 0, x, y, R);
+    pg.addColorStop(0, '#FFFFFF'); pg.addColorStop(0.35, '#D9C6FF'); pg.addColorStop(1, 'rgba(150,110,255,0)');
+    ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fillStyle = pg; ctx.fill();
+    return;
+  }
+  /* —— 超新星：爆发放射 —— */
+  if (k === 'supernova') {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(b.seed);
+    for (let i = 0; i < 22; i++) {
+      const a = i / 22 * TAU, len = R * (1.4 + h1(b.seed, i) * 2.2);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a - 0.03) * R * 0.5, Math.sin(a - 0.03) * R * 0.5);
+      ctx.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+      ctx.lineTo(Math.cos(a + 0.03) * R * 0.5, Math.sin(a + 0.03) * R * 0.5);
+      ctx.closePath();
+      ctx.fillStyle = i % 3 === 0 ? 'rgba(255,220,255,.35)' : 'rgba(190,150,255,.22)'; ctx.fill();
+    }
+    ctx.restore();
+    const sg = ctx.createRadialGradient(x, y, 0, x, y, R * 1.1);
+    sg.addColorStop(0, '#FFFFFF'); sg.addColorStop(0.3, '#FFE6FF'); sg.addColorStop(0.7, 'rgba(220,150,255,.5)');
+    sg.addColorStop(1, 'rgba(160,90,255,0)');
+    ctx.beginPath(); ctx.arc(x, y, R * 1.1, 0, TAU); ctx.fillStyle = sg; ctx.fill();
+    return;
+  }
+  /* —— 星云：彩色云团 —— */
+  if (k === 'nebulabody') {
+    for (let i = 0; i < 9; i++) {
+      const a = h1(b.seed, i) * TAU, rr = R * (0.1 + h1(b.seed, i + 30) * 0.75);
+      ctx.beginPath();
+      ctx.ellipse(x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.85,
+        R * (0.35 + h1(b.seed, i + 60) * 0.5), R * (0.28 + h1(b.seed, i + 90) * 0.4), a, 0, TAU);
+      ctx.fillStyle = i % 3 === 0 ? 'rgba(255,150,220,.2)' : i % 3 === 1 ? 'rgba(140,120,255,.22)' : 'rgba(90,200,255,.18)';
+      ctx.fill();
+    }
+    const ng = ctx.createRadialGradient(x, y, 0, x, y, R * 0.5);
+    ng.addColorStop(0, 'rgba(255,240,255,.8)'); ng.addColorStop(1, 'rgba(200,160,255,0)');
+    ctx.beginPath(); ctx.arc(x, y, R * 0.5, 0, TAU); ctx.fillStyle = ng; ctx.fill();
+    for (let i = 0; i < 28; i++) {
+      const a = h1(b.seed, i + 200) * TAU, rr = R * (0.15 + h1(b.seed, i + 240) * 1.0);
+      ctx.globalAlpha = 0.3 + h1(b.seed, i + 280) * 0.5;
+      ctx.beginPath(); ctx.arc(x + Math.cos(a) * rr, y + Math.sin(a) * rr, R * 0.02, 0, TAU);
+      ctx.fillStyle = '#FFFFFF'; ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    return;
+  }
+  /* —— 彗星：彗核 + 长尾 —— */
+  if (k === 'comet') {
+    const dir = b.seed > 3 ? 1 : -1;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(dir * 0.5);
+    const tg = ctx.createLinearGradient(0, 0, -R * 5.5, 0);
+    tg.addColorStop(0, 'rgba(190,232,255,.75)'); tg.addColorStop(1, 'rgba(140,200,255,0)');
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.3, -R * 0.55); ctx.lineTo(-R * 5.5, -R * 0.1);
+    ctx.lineTo(-R * 5.5, R * 0.1); ctx.lineTo(-R * 0.3, R * 0.55);
+    ctx.closePath(); ctx.fillStyle = tg; ctx.fill();
+    ctx.restore();
+    const cg3 = ctx.createRadialGradient(x, y, 0, x, y, R * 1.6);
+    cg3.addColorStop(0, '#FFFFFF'); cg3.addColorStop(0.3, '#CFEBFF'); cg3.addColorStop(1, 'rgba(160,215,255,0)');
+    ctx.beginPath(); ctx.arc(x, y, R * 1.6, 0, TAU); ctx.fillStyle = cg3; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, R * 0.55, 0, TAU); ctx.fillStyle = '#F2FBFF'; ctx.fill();
+    return;
+  }
+  /* —— 流星：岩石 + 火焰尾 —— */
+  if (k === 'meteor') {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(b.seed + 0.6);
+    const mg = ctx.createLinearGradient(0, 0, -R * 3.4, 0);
+    mg.addColorStop(0, 'rgba(255,190,90,.8)'); mg.addColorStop(0.6, 'rgba(255,110,40,.45)');
+    mg.addColorStop(1, 'rgba(255,80,20,0)');
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.5, -R * 0.5); ctx.lineTo(-R * 3.4, -R * 0.15);
+    ctx.lineTo(-R * 3.4, R * 0.15); ctx.lineTo(-R * 0.5, R * 0.5);
+    ctx.closePath(); ctx.fillStyle = mg; ctx.fill();
+    ctx.restore();
+    ctx.beginPath();
+    for (let i = 0; i < 9; i++) {
+      const a = i / 9 * TAU, rr = R * (0.85 + h1(b.seed, i) * 0.3);
+      const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    fillo('#8C7A66', 'rgba(40,26,16,.8)', Math.max(1, R * 0.06));
+    ctx.beginPath(); ctx.arc(x - R * 0.3, y - R * 0.3, R * 0.35, 0, TAU);
+    ctx.fillStyle = 'rgba(255,170,90,.55)'; ctx.fill();
+    return;
+  }
+
+  /* —— 行星 / 卫星 / 小行星 / 矮行星 —— */
+  const col = b.color || (BODY_INFO[k] ? BODY_INFO[k].color : '#3E7FD0');
+  if (k === 'asteroid') {
+    ctx.beginPath();
+    for (let i = 0; i < 9; i++) {
+      const a = i / 9 * TAU, rr = R * (0.82 + h1(b.seed, i) * 0.34);
+      const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    fillo(col, 'rgba(30,26,40,.8)', Math.max(1, R * 0.08));
+    craters(x, y, R * 0.8, b.seed, 5, 'rgba(255,255,255,.1)');
+    return;
+  }
+  sphereBase(x, y, R, col, big);
   ctx.save();
   ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.clip();
-  if (b.celestial === 'gas') {
-    for (let i = -3; i <= 3; i++) {
+  if (k === 'gas') {                                  // 木星式条纹 + 大红斑
+    for (let i = -4; i <= 4; i++) {
       ctx.beginPath();
-      ctx.ellipse(x, y + i * R * 0.26, R * 1.05, R * 0.09, 0, 0, TAU);
-      ctx.fillStyle = 'rgba(255,255,255,.13)'; ctx.fill();
+      ctx.ellipse(x, y + i * R * 0.22, R * 1.06, R * 0.075, 0, 0, TAU);
+      ctx.fillStyle = i % 2 ? 'rgba(255,240,215,.22)' : 'rgba(150,110,70,.24)'; ctx.fill();
     }
-  } else {
+    ctx.beginPath(); ctx.ellipse(x + R * 0.28, y + R * 0.24, R * 0.26, R * 0.15, 0.2, 0, TAU);
+    ctx.fillStyle = 'rgba(196,90,60,.85)'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + R * 0.28, y + R * 0.24, R * 0.15, R * 0.08, 0.2, 0, TAU);
+    ctx.fillStyle = 'rgba(232,130,90,.7)'; ctx.fill();
+  } else if (k === 'saturn') {                        // 土星式淡条纹
+    for (let i = -4; i <= 4; i++) {
+      ctx.beginPath();
+      ctx.ellipse(x, y + i * R * 0.24, R * 1.06, R * 0.08, 0, 0, TAU);
+      ctx.fillStyle = i % 2 ? 'rgba(255,244,214,.24)' : 'rgba(196,160,100,.22)'; ctx.fill();
+    }
+  } else if (k === 'earth') {                         // 地球：绿陆地 + 白云
+    for (let i = 0; i < 7; i++) {
+      const a = h1(b.seed, i) * TAU, rr = R * (0.15 + h1(b.seed, i + 20) * 0.6);
+      ctx.beginPath();
+      ctx.ellipse(x + Math.cos(a) * rr, y + Math.sin(a) * rr, R * (0.18 + h1(b.seed, i + 40) * 0.24),
+        R * (0.14 + h1(b.seed, i + 60) * 0.2), a, 0, TAU);
+      ctx.fillStyle = 'rgba(96,168,90,.9)'; ctx.fill();
+    }
+    for (let i = 0; i < 5; i++) {
+      const a = h1(b.seed, i + 100) * TAU;
+      ctx.beginPath();
+      ctx.ellipse(x + Math.cos(a) * R * 0.5, y + Math.sin(a) * R * 0.5, R * 0.3, R * 0.07, a * 0.5, 0, TAU);
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fill();
+    }
+  } else if (k === 'mars') {                          // 火星：暗斑 + 极冠
+    for (let i = 0; i < 6; i++) {
+      const a = h1(b.seed, i) * TAU, rr = R * (0.15 + h1(b.seed, i + 20) * 0.6);
+      ctx.beginPath();
+      ctx.ellipse(x + Math.cos(a) * rr, y + Math.sin(a) * rr, R * (0.16 + h1(b.seed, i + 40) * 0.2),
+        R * 0.12, a, 0, TAU);
+      ctx.fillStyle = 'rgba(120,58,36,.5)'; ctx.fill();
+    }
+    ctx.beginPath(); ctx.ellipse(x, y - R * 0.88, R * 0.34, R * 0.14, 0, 0, TAU);
+    ctx.fillStyle = 'rgba(255,250,245,.85)'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, y + R * 0.88, R * 0.28, R * 0.12, 0, 0, TAU);
+    ctx.fillStyle = 'rgba(255,250,245,.7)'; ctx.fill();
+  } else if (k === 'venus') {                         // 金星：奶油色云涡
+    for (let i = 0; i < 6; i++) {
+      const a = h1(b.seed, i) * TAU;
+      ctx.beginPath();
+      ctx.ellipse(x + Math.cos(a) * R * 0.4, y + Math.sin(a) * R * 0.4, R * 0.42, R * 0.08, a, 0, TAU);
+      ctx.fillStyle = 'rgba(255,248,220,.35)'; ctx.fill();
+    }
+  } else if (k === 'neptune') {                       // 海王星：深蓝 + 大黑斑
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.ellipse(x, y + (i - 1.5) * R * 0.3, R * 1.05, R * 0.06, 0, 0, TAU);
+      ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fill();
+    }
+    ctx.beginPath(); ctx.ellipse(x + R * 0.2, y + R * 0.18, R * 0.24, R * 0.14, 0.2, 0, TAU);
+    ctx.fillStyle = 'rgba(14,30,80,.8)'; ctx.fill();
+  } else if (k === 'uranus') {                        // 天王星：青色 + 细环
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.ellipse(x, y + (i - 1) * R * 0.34, R * 1.05, R * 0.05, 0, 0, TAU);
+      ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.fill();
+    }
+  } else if (k === 'mercury' || k === 'moon' || k === 'pluto') {
+    craters(x, y, R * 0.95, b.seed, k === 'pluto' ? 4 : 7, 'rgba(255,255,255,.14)');
+    if (k === 'pluto') {
+      ctx.beginPath(); ctx.ellipse(x + R * 0.1, y + R * 0.1, R * 0.3, R * 0.24, 0.3, 0, TAU);
+      ctx.fillStyle = 'rgba(255,250,240,.5)'; ctx.fill();
+    }
+  } else {                                            // 其它类地行星
     for (let i = 0; i < 5; i++) {
       const a = b.seed + i * 1.7;
       ctx.beginPath();
@@ -1363,32 +2035,23 @@ function drawCelestial(b) {
   // 云带
   for (let i = 0; i < 4; i++) {
     const a2 = b.seed + i * 2.1 + time * 0.05;
-    ctx.globalAlpha = 0.22;
+    ctx.globalAlpha = 0.2;
     ctx.beginPath();
     ctx.ellipse(x + Math.cos(a2) * R * 0.5, y + Math.sin(a2) * R * 0.5, R * (0.22 + (i % 3) * 0.08), R * 0.06, a2 * 0.6, 0, TAU);
     ctx.fillStyle = '#FFFFFF'; ctx.fill();
   }
   ctx.globalAlpha = 1;
-  // 晨昏线（背光面压暗）
-  const tg2 = ctx.createRadialGradient(x - R * 0.5, y - R * 0.5, R * 0.2, x + R * 0.35, y + R * 0.35, R * 1.45);
-  tg2.addColorStop(0, 'rgba(0,0,0,0)');
-  tg2.addColorStop(0.5, 'rgba(0,0,0,.14)');
-  tg2.addColorStop(1, 'rgba(0,0,0,.7)');
-  ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fillStyle = tg2; ctx.fill();
-  ctx.beginPath(); ctx.arc(x, y, R * 1.02, 0, TAU);      // 大气辉光
+  ctx.restore();
+  sphereShade(x, y, R);
+  ctx.beginPath(); ctx.arc(x, y, R * 1.02, 0, TAU);
   ctx.strokeStyle = 'rgba(150,210,255,.32)'; ctx.lineWidth = Math.max(2, R * 0.05); ctx.stroke();
-  ctx.beginPath();                                        // 高光
+  ctx.beginPath();
   ctx.ellipse(x - R * 0.38, y - R * 0.42, R * 0.16, R * 0.09, -0.6, 0, TAU);
   ctx.fillStyle = 'rgba(255,255,255,.32)'; ctx.fill();
-  ctx.restore();
-  if (b.ring) {
-    ctx.save();
-    ctx.translate(x, y); ctx.rotate(-0.42);
-    ctx.beginPath(); ctx.ellipse(0, 0, R * 1.8, R * 0.44, 0, 0, TAU);
-    ctx.strokeStyle = 'rgba(232,218,192,.55)'; ctx.lineWidth = Math.max(2, R * 0.1); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(0, 0, R * 1.5, R * 0.35, 0, 0, TAU);
-    ctx.strokeStyle = 'rgba(190,175,150,.35)'; ctx.lineWidth = Math.max(1, R * 0.05); ctx.stroke();
-    ctx.restore();
+  if (k === 'saturn') {
+    ringBands(x, y, R, -0.42, [['rgba(232,218,192,.5)', 0.13], ['rgba(190,175,150,.3)', 0.06], ['rgba(240,230,205,.4)', 0.08]]);
+  } else if (k === 'uranus') {
+    ringBands(x, y, R, 1.25, [['rgba(200,240,250,.4)', 0.05], ['rgba(180,225,240,.25)', 0.04]]);
   }
 }
 /* 小行星 / 星舰（= 城市里的行人） */
@@ -1457,50 +2120,133 @@ function drawComet(c) {
 const TERRAIN_FILL = { plain: '#79A055', plain2: '#759A52' };   // 统一草坪（两种极接近的草色）
 function drawTerrain() {
   const half = viewRect();
-  ctx.fillStyle = '#7AA056';
+  // ① 海洋
+  const og = ctx.createLinearGradient(0, half.y, 0, half.y + half.h);
+  og.addColorStop(0, '#1E5C96'); og.addColorStop(0.5, '#2A73AE'); og.addColorStop(1, '#1B5488');
+  ctx.fillStyle = og;
   ctx.fillRect(half.x, half.y, half.w, half.h);
-  for (const b of blocks) {
-    if (b.x > half.x + half.w || b.x + b.w < half.x || b.y > half.y + half.h || b.y + b.h < half.y) continue;
-    const tc = TERRAIN_FILL[b.terrain] || '#79A055';
-    const tg = ctx.createRadialGradient(b.cx, b.cy, b.w * 0.06, b.cx, b.cy, b.w * 0.8);
-    tg.addColorStop(0, tc);
-    tg.addColorStop(0.58, tc);
-    tg.addColorStop(1, 'rgba(122,160,86,0)');       // 边缘淡出→整片草坪自然过渡
-    ctx.fillStyle = tg;
-    ctx.fillRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8);
-    const seed = b.cx * 0.017 + b.cy * 0.031;              // 草色深浅斑块
-    for (let k = 0; k < 9; k++) {
-      const a1 = Math.sin(seed * 1.7 + k * 2.4) * 0.5 + 0.5;
-      const a2 = Math.cos(seed * 2.3 + k * 3.1) * 0.5 + 0.5;
-      ctx.beginPath();
-      ctx.arc(b.x + a1 * b.w, b.y + a2 * b.h, b.w * (0.05 + (k % 4) * 0.03), 0, TAU);
-      ctx.fillStyle = k % 2 ? 'rgba(255,255,255,.055)' : 'rgba(0,0,0,.055)';
-      ctx.fill();
-    }
-    // 湖水/岩地已取消：统一草坪
-  }
-  // 河流（偶尔出现，横贯地图的蜿蜒水带）
-  for (const rv of rivers) {
-    const pts = rv.pts;
+  // 海浪细纹
+  const wstep = BLOCK * 0.55;
+  ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = Math.max(1, 1.6 * CS);
+  for (let y = Math.floor(half.y / wstep) * wstep; y < half.y + half.h; y += wstep) {
     ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length - 1; i++) {
-      const mx = (pts[i].x + pts[i + 1].x) / 2, my = (pts[i].y + pts[i + 1].y) / 2;
-      ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+    for (let x = Math.floor(half.x / wstep) * wstep; x <= half.x + half.w; x += wstep) {
+      const yy = y + Math.sin(x * 0.004 / Math.max(1, CS) + y * 0.001) * wstep * 0.16;
+      if (x === Math.floor(half.x / wstep) * wstep) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
     }
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.strokeStyle = 'rgba(120,170,110,.55)'; ctx.lineWidth = rv.w * 1.7; ctx.stroke();   // 河岸草
-    ctx.strokeStyle = '#4E8FB0'; ctx.lineWidth = rv.w; ctx.stroke();
-    ctx.strokeStyle = 'rgba(150,215,235,.45)'; ctx.lineWidth = rv.w * 0.35; ctx.stroke();  // 水面高光
+    ctx.stroke();
   }
-  ctx.fillStyle = 'rgba(58,68,76,.8)';                 // 横贯的高速公路
-  const step = BLOCK * 5;
-  for (let y = step; y < WORLD.h; y += step) ctx.fillRect(half.x, y - 13 * CS, half.w, 26 * CS);
-  for (let x = step; x < WORLD.w; x += step) ctx.fillRect(x - 13 * CS, half.y, 26 * CS, half.h);
-  ctx.fillStyle = 'rgba(240,225,150,.45)';
-  for (let y = step; y < WORLD.h; y += step) {
-    if (y < half.y || y > half.y + half.h) continue;
-    for (let x = Math.floor(half.x / (90 * CS)) * 90 * CS; x < half.x + half.w; x += 90 * CS) ctx.fillRect(x, y - 2 * CS, 40 * CS, 4 * CS);
+  if (!island) return;
+  // ② 海岸分层：浅海 → 浪花 → 沙滩 → 草地
+  // 海岸只保留"浅海 + 细沙滩"两层，避免出现像梯田/假大陆的色带
+  const layers = [
+    { k: 1.055, c: '#4E9CC8' },
+    { k: 1.014, c: '#E8DAA8' },
+    { k: 0.992, c: '#8CC24E' }
+  ];
+  const drawIsle = (cx, cy, R, seed, squash) => {
+    // 视口剔除：完全在画面外的岛/海岸线不画（离岸小岛加起来能省上千个路径点）
+    if (cx + R * 1.45 < half.x - BLOCK || cx - R * 1.45 > half.x + half.w + BLOCK) return;
+    if (cy + R * 1.45 * squash < half.y - BLOCK || cy - R * 1.45 * squash > half.y + half.h + BLOCK) return;
+    for (const L of layers) { islandPath(cx, cy, R, seed, L.k, squash); ctx.fillStyle = L.c; ctx.fill(); }
+  };
+  drawIsle(island.cx, island.cy, island.R, island.seed, 0.9);
+  for (const s of island.sub) drawIsle(s.x, s.y, s.r, s.seed, 0.9);
+  const bigOn = island.cx + island.R * 1.45 > half.x - BLOCK && island.cx - island.R * 1.45 < half.x + half.w + BLOCK &&
+    island.cy + island.R * 1.3 > half.y - BLOCK && island.cy - island.R * 1.3 < half.y + half.h + BLOCK;
+
+  // ③ 草地细节（裁剪进主岛）：极淡草斑；低画质或看得很远时直接跳过
+  if (bigOn && !lowQ) {
+    ctx.save();
+    islandPath(island.cx, island.cy, island.R, island.seed, 0.992, 0.9);
+    ctx.clip();
+    for (const b of blocks) {
+      if (b.x > half.x + half.w + BLOCK || b.x + b.w < half.x - BLOCK) continue;
+      if (b.y > half.y + half.h + BLOCK || b.y + b.h < half.y - BLOCK) continue;
+      const seed = b.cx * 0.017 + b.cy * 0.031;
+      for (let k = 0; k < 2; k++) {
+        const a1 = Math.sin(seed * 1.7 + k * 2.4) * 0.5 + 0.5;
+        const a2 = Math.cos(seed * 2.3 + k * 3.1) * 0.5 + 0.5;
+        ctx.beginPath();
+        ctx.arc(b.x + a1 * b.w, b.y + a2 * b.h, b.w * 0.14, 0, TAU);
+        ctx.fillStyle = k % 2 ? 'rgba(255,255,255,.035)' : 'rgba(70,110,40,.035)';
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  // ④ 湖泊（视口剔除）
+  for (const L of lakes) {
+    if (L.x + L.rx * 1.3 < half.x - BLOCK || L.x - L.rx * 1.3 > half.x + half.w + BLOCK) continue;
+    if (L.y + L.ry * 1.3 < half.y - BLOCK || L.y - L.ry * 1.3 > half.y + half.h + BLOCK) continue;
+    ctx.beginPath(); ctx.ellipse(L.x, L.y, L.rx * 1.22, L.ry * 1.22, 0, 0, TAU);
+    ctx.fillStyle = '#E8DAA8'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(L.x, L.y, L.rx, L.ry, 0, 0, TAU);
+    ctx.fillStyle = '#4E9FC4'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(L.x - L.rx * 0.18, L.y - L.ry * 0.2, L.rx * 0.5, L.ry * 0.42, 0.3, 0, TAU);
+    ctx.fillStyle = 'rgba(190,235,245,.35)'; ctx.fill();
+  }
+
+  // ⑤ 河流：河岸 + 渐变水面 + 中央高光（宽度从源头到入海口逐渐变宽）
+  for (const rv of rivers) {
+    const pts = rv.pts, ws = rv.ws || pts.map(function () { return rv.w; });
+    const N = pts.length;
+    const left = [], right = [];
+    for (let i = 0; i < N; i++) {
+      const p = pts[i];
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N - 1, i + 1)];
+      let nx = -(b.y - a.y), ny = (b.x - a.x);
+      const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+      const hw = ws[i] * 0.5;
+      left.push({ x: p.x + nx * hw, y: p.y + ny * hw });
+      right.push({ x: p.x - nx * hw, y: p.y - ny * hw });
+    }
+    const riverPath = function () {
+      ctx.beginPath();
+      ctx.moveTo(left[0].x, left[0].y);
+      for (let i = 1; i < N; i++) {
+        const mx = (left[i - 1].x + left[i].x) / 2, my = (left[i - 1].y + left[i].y) / 2;
+        ctx.quadraticCurveTo(left[i - 1].x, left[i - 1].y, mx, my);
+      }
+      ctx.lineTo(left[N - 1].x, left[N - 1].y);
+      ctx.lineTo(right[N - 1].x, right[N - 1].y);
+      for (let i = N - 2; i >= 0; i--) {
+        const mx = (right[i + 1].x + right[i].x) / 2, my = (right[i + 1].y + right[i].y) / 2;
+        ctx.quadraticCurveTo(right[i + 1].x, right[i + 1].y, mx, my);
+      }
+      ctx.closePath();
+    };
+    ctx.save();
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    riverPath();                                   // 河岸（湿沙 + 草边）
+    ctx.strokeStyle = 'rgba(120,170,92,.65)'; ctx.lineWidth = BLOCK * 0.26; ctx.stroke();
+    ctx.strokeStyle = 'rgba(198,190,148,.7)'; ctx.lineWidth = BLOCK * 0.085; ctx.stroke();
+    riverPath();                                   // 水面
+    const rg = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[N - 1].x, pts[N - 1].y);
+    rg.addColorStop(0, '#6FC3DE'); rg.addColorStop(0.45, '#3E92BE'); rg.addColorStop(1, '#2C6C9C');
+    ctx.fillStyle = rg; ctx.fill();
+    ctx.strokeStyle = 'rgba(24,70,100,.35)'; ctx.lineWidth = Math.max(1, BLOCK * 0.02); ctx.stroke();
+    ctx.save(); ctx.clip();                        // 水面波纹
+    ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = Math.max(1, BLOCK * 0.02);
+    for (let i = 0; i < 10; i++) {
+      const p = pts[(i * 2) % N];
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, ws[(i * 2) % N] * 0.34, ws[(i * 2) % N] * 0.12, 0.6, 0, TAU);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.beginPath();                               // 中央高光
+    for (let i = 0; i < N; i++) {
+      const px = (left[i].x + right[i].x) / 2, py = (left[i].y + right[i].y) / 2;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = 'rgba(226,248,255,.45)'; ctx.lineWidth = Math.max(1.2, BLOCK * 0.028); ctx.stroke();
+    ctx.beginPath();                               // 源头小水潭
+    ctx.arc(pts[0].x, pts[0].y, ws[0] * 0.7, 0, TAU);
+    ctx.fillStyle = '#5FB6D6'; ctx.fill();
+    ctx.strokeStyle = 'rgba(206,196,150,.8)'; ctx.lineWidth = Math.max(1, BLOCK * 0.03); ctx.stroke();
+    ctx.restore();
   }
 }
 /* 与实体绑定的伪随机（同一实体每帧稳定，避免细节闪烁） */
@@ -1586,10 +2332,15 @@ function drawFeature(b) {
     ctx.fillRect(-W / 2, -D / 2, W, D);
     const cols = 7, rows = 7;
     const cw = W / cols, cd = D / rows;
+    const small = W * cam.zoom < 90 || lowQ;                    // 远景/低画质：省略细节
     ctx.fillStyle = 'rgba(215,218,214,.55)';                      // 街道网格
     for (let i = 0; i <= cols; i++) ctx.fillRect(-W / 2 + i * cw - W * 0.006, -D / 2, W * 0.012, D);
     for (let j = 0; j <= rows; j++) ctx.fillRect(-W / 2, -D / 2 + j * cd - D * 0.006, W, D * 0.012);
-    let tall = 0;
+    // 整片微缩城市共用一条渐变（原来每栋楼新建一次，是最大的性能黑洞）
+    const gg = ctx.createLinearGradient(-W / 2, 0, W / 2, 0);
+    gg.addColorStop(0, '#8FA3B4'); gg.addColorStop(0.4, '#D2DEE6'); gg.addColorStop(1, '#6E8497');
+    ctx.fillStyle = gg;
+    const boxes = [];
     for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
       const r1 = h1(b.seed, i * 13 + j * 7);
       if (r1 < 0.16) continue;                                    // 留出空地
@@ -1597,22 +2348,23 @@ function drawFeature(b) {
       const bx = -W / 2 + (i + 0.5) * cw, by = -D / 2 + (j + 0.5) * cd;
       const bh = b.h * (0.35 + r1 * 0.75);
       const top = by - bd / 2 - bh;
-      // 楼体
-      const gg = ctx.createLinearGradient(bx - bw / 2, 0, bx + bw / 2, 0);
-      gg.addColorStop(0, '#8FA3B4'); gg.addColorStop(0.4, '#D2DEE6'); gg.addColorStop(1, '#6E8497');
-      ctx.fillStyle = gg;
-      ctx.fillRect(bx - bw / 2, top, bw, bh + bd * 0.36);
-      ctx.strokeStyle = 'rgba(40,55,70,.5)'; ctx.lineWidth = Math.max(0.6, W * 0.0016);
-      ctx.strokeRect(bx - bw / 2, top, bw, bh + bd * 0.36);
-      // 窗格
-      const wr = Math.max(1, Math.round(bh / (cd * 0.34)));
-      for (let k = 0; k < wr; k++) {
-        if (h1(b.seed, i * 91 + j * 17 + k) < 0.42) continue;
-        ctx.fillStyle = 'rgba(255,238,180,.9)';
-        ctx.fillRect(bx - bw * 0.32, top + (k + 0.3) * (bh / wr), bw * 0.22, (bh / wr) * 0.34);
-        ctx.fillRect(bx + bw * 0.1, top + (k + 0.3) * (bh / wr), bw * 0.22, (bh / wr) * 0.34);
+      ctx.fillRect(bx - bw / 2, top, bw, bh + bd * 0.36);          // 楼体（同一批次填充）
+      if (!small) boxes.push([bx - bw / 2, top, bw, bh + bd * 0.36]);
+      if (!small) {
+        // 窗格：合并成一条路径再一次填充
+        const wr = Math.max(1, Math.round(bh / (cd * 0.34)));
+        for (let k = 0; k < wr; k++) {
+          if (h1(b.seed, i * 91 + j * 17 + k) < 0.42) continue;
+          ctx.fillRect(bx - bw * 0.32, top + (k + 0.3) * (bh / wr), bw * 0.22, (bh / wr) * 0.34);
+          ctx.fillRect(bx + bw * 0.1, top + (k + 0.3) * (bh / wr), bw * 0.22, (bh / wr) * 0.34);
+        }
       }
-      tall++;
+    }
+    if (!small) {
+      ctx.strokeStyle = 'rgba(40,55,70,.5)'; ctx.lineWidth = Math.max(0.6, W * 0.0016);
+      ctx.beginPath();
+      for (const q of boxes) ctx.rect(q[0], q[1], q[2], q[3]);
+      ctx.stroke();                                              // 一次描边代替逐栋 strokeRect
     }
     // 几棵行道树
     for (let k = 0; k < 14; k++) {
@@ -1620,6 +2372,36 @@ function drawFeature(b) {
       ctx.beginPath(); ctx.arc(px, py, W * 0.012, 0, TAU); ctx.fillStyle = '#3F7A3C'; ctx.fill();
     }
     ctx.restore();
+    return;
+  }
+  if (b.feature === 'hill') {
+    // 丘陵：像世界地图上那种棕色岩丘
+    const W = b.w, H = b.h;
+    const g = ctx.createLinearGradient(x, baseY - H, x, baseY);
+    g.addColorStop(0, '#C6AC84'); g.addColorStop(0.45, '#A88C60'); g.addColorStop(1, '#7A6C48');
+    ctx.beginPath();
+    ctx.moveTo(x - W * 0.5, baseY);
+    ctx.lineTo(x - W * 0.26, baseY - H * 0.74);
+    ctx.lineTo(x - W * 0.10, baseY - H * 0.92);
+    ctx.lineTo(x + W * 0.04, baseY - H);
+    ctx.lineTo(x + W * 0.22, baseY - H * 0.7);
+    ctx.lineTo(x + W * 0.4, baseY - H * 0.42);
+    ctx.lineTo(x + W * 0.5, baseY);
+    ctx.closePath();
+    fillo(g, 'rgba(70,58,38,.5)', Math.max(1.5, W * 0.008));
+    ctx.strokeStyle = 'rgba(80,66,44,.26)'; ctx.lineWidth = Math.max(1, W * 0.005);
+    for (let k = 0; k < 4; k++) {
+      ctx.beginPath();
+      ctx.moveTo(x - W * 0.3 + k * W * 0.13, baseY - H * (0.2 + k * 0.12));
+      ctx.quadraticCurveTo(x - W * 0.05, baseY - H * (0.34 + k * 0.12), x + W * 0.3, baseY - H * (0.2 + k * 0.1));
+      ctx.stroke();
+    }
+    // 山脚矮树
+    for (let k = 0; k < 5; k++) {
+      const a = h1(b.seed, 300 + k);
+      const px = x + (a - 0.5) * W * 0.95, py = baseY + W * 0.02;
+      ctx.beginPath(); ctx.arc(px, py, W * 0.05, 0, TAU); ctx.fillStyle = '#3F6B3C'; ctx.fill();
+    }
     return;
   }
   if (b.feature === 'mountain') {
@@ -2032,6 +2814,23 @@ function drawGround() {
   }
 }
 function drawTree(t) {
+  const px = t.r * cam.zoom;                        // 屏幕半径：太小就走简化绘制
+  if (px < 7) {                                     // 远景：单个圆点
+    ctx.beginPath(); ctx.arc(t.x, t.y - t.r, Math.max(1.2, px), 0, TAU);
+    ctx.fillStyle = t.alive ? '#4E7F45' : '#7A6A48'; ctx.fill();
+    return;
+  }
+  if (px < 34 || lowQ) {                            // 中景/低画质：无描边、两层树冠
+    ctx.beginPath(); ctx.ellipse(t.x + 2 * CS, t.y + 1 * CS, t.r * 0.85, t.r * 0.36, 0, 0, TAU);
+    ctx.fillStyle = 'rgba(20,40,30,.22)'; ctx.fill();
+    ctx.fillStyle = '#6B4A33';
+    ctx.fillRect(t.x - t.r * 0.12, t.y - t.r * 0.9, t.r * 0.24, t.r * 0.9);
+    ctx.beginPath(); ctx.arc(t.x - t.r * 0.34, t.y - t.r * 1.18, t.r * 0.64, 0, TAU);
+    ctx.fillStyle = t.alive ? '#4E7F45' : '#7A6A48'; ctx.fill();
+    ctx.beginPath(); ctx.arc(t.x + t.r * 0.3, t.y - t.r * 1.24, t.r * 0.7, 0, TAU);
+    ctx.fillStyle = t.alive ? '#5D9450' : '#8A7A55'; ctx.fill();
+    return;
+  }
   const sw = Math.sin(time * 1.1 + t.sway) * (t.r * 0.06);
   ctx.save(); ctx.translate(t.x, t.y);
   ctx.fillStyle = 'rgba(20,40,30,.28)';
@@ -2319,7 +3118,7 @@ function floater(x, y, text, color) {
 }
 function burst(x, y, n, opt) {
   opt = opt || {};
-  if (particles.length > 900) n = Math.min(n, 6);
+  if (particles.length > (lowQ ? 320 : 700)) n = Math.min(n, lowQ ? 2 : 4);
   const K = fxs();
   for (let i = 0; i < n; i++) {
     const a = rand(0, TAU), sp = rand(opt.sp0 || 30, opt.sp1 || 160) * K;
@@ -2349,10 +3148,20 @@ function footprintDist(b, px, py) {
 /* 建筑/天体碰撞：只有自己确实更高的才会被踩塌；比自己高的会挡住，
    且只有接近（≥72%）时才推得动，绝不会出现“还没山高就把山震碎” */
 function resolveBuildingCollision(e, h, byRival, dt) {
+  // 快速模式：竞争者只被建筑挡住，不会破坏建筑
+  const rivalNoDamage = !!byRival && byRival !== P && mode === 'story';
   const rad = h * 0.15 + 7;
   for (const b of buildings) {
     if (b.dead) continue;
     if (Math.abs(b.x - e.x) > b.w / 2 + rad + 6 || Math.abs(b.y - e.y) > b.d / 2 + rad + 6) continue;
+    if (rivalNoDamage) {                         // 只做碰撞阻挡，不扣血
+      const dx0 = e.x - b.x, dy0 = e.y - b.y;
+      const ox0 = (b.w / 2 + rad) - Math.abs(dx0), oy0 = (b.d / 2 + rad) - Math.abs(dy0);
+      if (ox0 <= 0 || oy0 <= 0) continue;
+      if (ox0 < oy0) e.x = b.x + (dx0 < 0 ? -1 : 1) * (b.w / 2 + rad);
+      else e.y = b.y + (dy0 < 0 ? -1 : 1) * (b.d / 2 + rad);
+      continue;
+    }
     if (stage === 'space' || b.h <= h) {          // 自己更高 → 直接碾过去
       damageBuilding(b, (b.w * 0.5 + 60) * dt * (stage === 'space' ? 0.9 : h * 0.02 + 0.4), byRival);
       continue;
@@ -2400,7 +3209,9 @@ function gainMass(m, src) {
   }
 }
 /* 收益曲线：随体型增长但明显次线性（mass^0.45），避免后期指数爆炸式膨胀 */
-const growGain = (base, k) => Math.max(base, k * Math.pow(P.mass, 0.45)) * (mode === 'endless' ? 0.5 : 1);
+/* 成长倍率：吸收之旅 0.5（原有减半）；快速模式 0.32（明显更慢，逼你靠掠夺与踩踏） */
+const GROW_MUL = () => mode === 'endless' ? 0.5 : mode === 'story' ? 0.32 : 1;
+const growGain = (base, k) => Math.max(base, k * Math.pow(P.mass, 0.45)) * GROW_MUL();
 function squashPerson(p, amount) {
   if (!p.alive) return;
   p.alive = false; p.dead = 1; stats.stomped++;
@@ -2415,7 +3226,7 @@ function damageBuilding(b, dmg, byRival) {
   burst(b.x + rand(-b.w / 2, b.w / 2), b.y - b.h * 0.4, 4, { sp0: 10, sp1: 70, color: '#BEB7A8', r0: 1.4, r1: 4, l0: .3, l1: .7, g: 90 });
   if (b.hp > 0) { if (time - sfxSquishT > 0.09) { sfxSquishT = time; SFX.crunch(); } return; }
   b.dead = true; b.ruined = 0;
-  const reward = Math.max(0.22 + b.maxHp * 0.004, growGain(0, 0.30));   // 收益随体型次线性放大
+  const reward = Math.max(0.22 + b.maxHp * 0.004, growGain(0, 0.30)) * (mode === 'story' ? 0.7 : 1);   // 收益随体型次线性放大
   if (byRival) { byRival.mass += reward * 0.65; floater(b.x, b.y - b.h * 0.5, byRival.name + ' 拆楼', byRival.pal.hue); }
   else {
     stats.buildings++;
@@ -2463,41 +3274,78 @@ function doStomp() {
   }
   if (stats.stomped === 0 && stats.eaten === 0) { /* 首次提示由 toast 统一处理 */ }
 }
-/* —— 机制 3/4：吞食（人 / 食物 / 车） —— */
+/* —— 机制 3/4：吞噬 —— 一口吞掉范围内的一切 ——
+   范围：身高 × 0.8（宇宙关 0.9）
+   竞争者 / 建筑只要不超过玩家身高的 80%，也能直接吞下 —— 但会触发 10 秒吞噬冷却 */
+const DEVOUR_RATIO = 0.8, DEVOUR_CD = 10;
+function devourBuilding(b) {
+  b.dead = true; b.ruined = 0;
+  stats.buildings++;
+  const reward = Math.max(0.22 + b.maxHp * 0.004, growGain(0, 0.30)) * 1.15 * (mode === 'story' ? 0.7 : 1);   // 吞噬收益略高于踩碎
+  gainMass(reward, '吞噬');
+  floater(b.x, b.y - b.h * 0.5, '+' + reward.toFixed(2) + ' 吞噬', '#8fe8b0');
+  burst(b.x, b.y - b.h * 0.35, 22, { sp0: 30, sp1: 200, r0: 2, r1: 8, color: '#9BE8B6', l0: .5, l1: 1.3, g: -40 });
+  SFX.crunch(); SFX.gulp();
+}
 function tryEat() {
   if (state !== 'playing' || P.eatCd > 0) return;
   P.h = hOf(P.mass);
-  // 交互半径按身高比例给（约 0.62 个身高），不再被常数项撑大
-  const reach = P.h * (stage === 'space' ? 0.75 : 0.62) + (stage === 'space' ? 0 : 10 * CS);  P.eatCd = 0.22; P.eatT = 0.55; P.tongue = 0.6;
-  let best = null, bd = reach;
-  for (const p of people) if (p.alive) { const d = dist(p.x, p.y, P.x, P.y); if (d < bd) { bd = d; best = { k: 'p', o: p }; } }
-  for (const f of foods) if (!f.eaten) { const d = dist(f.x, f.y, P.x, P.y) * 0.9; if (d < bd) { bd = d; best = { k: 'f', o: f }; } }
-  if (P.h > 60) for (const c of cars) if (c.alive) { const d = dist(c.x, c.y, P.x, P.y); if (d < bd) { bd = d; best = { k: 'c', o: c }; } }
-  if (!best) { SFX.chomp(); return; }
-  const o = best.o;
+  const reach = P.h * (stage === 'space' ? 0.9 : 0.8) + (stage === 'space' ? 0 : 12 * CS);
   const f2 = (v) => v.toFixed(v < 1 ? 2 : 1);
-  if (best.k === 'p') {
-    o.alive = false; o.eaten = true; stats.eaten++;
-    const g = growGain(0.06, 0.11);
-    gainMass(g, '吞食');
-    floater(o.x, o.y - 26, '+' + f2(g) + ' 吞食', '#7fe6f2');
-    SFX.gulp();
-    if (stats.eaten === 1) toast('吞下第一口 —— <b>吃人</b> 比踩踏收益更高');
-  } else if (best.k === 'f') {
-    o.eaten = true; stats.food++;
-    const g = growGain(0.14, 0.22);
-    gainMass(g, '食物');
-    floater(o.x, o.y - 22, '+' + f2(g) + ' 食物', '#9fe8a0');
-    SFX.crunch(); SFX.gulp();
-    if (stats.food === 1) toast('街边食物是<b>最快的成长捷径</b>，边走边按 E');
-  } else {
-    o.alive = false; stats.cars++;
-    const g = growGain(0.09, 0.13);
-    gainMass(g);
-    floater(o.x, o.y - 22, '+' + f2(g) + ' 车辆', '#cfe0ea');
-    SFX.crunch();
+  let got = 0, gained = 0, big = 0;
+  const bigLimit = P.h * DEVOUR_RATIO;
+  // ① 小目标：范围内的全部吞下
+  for (const p of people) {
+    if (!p.alive || dist(p.x, p.y, P.x, P.y) > reach) continue;
+    p.alive = false; p.eaten = true; stats.eaten++;
+    const g = growGain(0.06, 0.11); gainMass(g, '吞食'); gained += g; got++;
+    floater(p.x, p.y - 26, '+' + f2(g), '#7fe6f2');
   }
-  burst(P.x, P.y - P.h * 0.62, 6, { color: '#F2F6FA', sp0: 20, sp1: 80, r0: 1.4, r1: 3.6, g: -20 });
+  for (const f of foods) {
+    if (f.eaten || dist(f.x, f.y, P.x, P.y) > reach) continue;
+    f.eaten = true; stats.food++;
+    const g = growGain(0.14, 0.22); gainMass(g, '食物'); gained += g; got++;
+    floater(f.x, f.y - 22, '+' + f2(g) + ' 食物', '#9fe8a0');
+  }
+  if (P.h > 60) for (const c of cars) {
+    if (!c.alive || dist(c.x, c.y, P.x, P.y) > reach) continue;
+    c.alive = false; stats.cars++;
+    const g = growGain(0.09, 0.13); gainMass(g); gained += g; got++;
+    floater(c.x, c.y - 22, '+' + f2(g), '#cfe0ea');
+  }
+  // ② 竞争者：不超过玩家身高 80% → 直接吸收
+  for (const r of rivals) {
+    if (!r.alive || r.h > bigLimit) continue;
+    if (dist(r.x, r.y, P.x, P.y) > reach + r.h * 0.6) continue;
+    absorbRival(r); big++; got++;
+  }
+  // ③ 建筑：不超过玩家身高 80% → 直接吞掉
+  for (const b of buildings) {
+    if (b.dead || b.h > bigLimit) continue;
+    if (footprintDist(b, P.x, P.y) > reach) continue;
+    devourBuilding(b); big++; got++;
+  }
+  // 吞噬特效：范围环 + 计数
+  if (got) {
+    addShock(P.x, P.y + 4, reach, P.h);
+    P.eatT = 0.5; P.tongue = 0.7; P.chew = 0.4;
+    SFX.gulp(); SFX.crunch();
+    burst(P.x, P.y - P.h * 0.55, 16, { color: '#BFF3FF', sp0: 60, sp1: 260, r0: 2, r1: 6, g: -30 });
+    floater(P.x, P.y - P.h * 1.04, '吞噬 ' + got + ' 个' + (gained > 0 ? '（+' + f2(gained) + ' 体型）' : ''), '#8FE8FF');
+    P.glow = 1;
+  } else {
+    P.eatT = 0.4; P.tongue = 0.5;
+    SFX.chomp();
+  }
+  if (big) {                                   // 吞下"大家伙" → 进入 10 秒冷却
+    P.eatCd = DEVOUR_CD;
+    shake(16);
+    flashV = Math.max(flashV, 0.35);
+    toast('吞噬了 <b>' + big + '</b> 个大型目标 —— 吞噬进入 <b>' + DEVOUR_CD + ' 秒冷却</b>');
+  } else {
+    P.eatCd = 0.22;
+  }
+  if (stats.eaten + stats.food === 1 && got === 1) toast('吞下第一口 —— <b>吞食</b> 范围内的东西能一次吃很多');
 }
 /* —— 技能：牵引（F）—— 把地图上所有竞争者拉到身前并眩晕 3 秒 —— */
 const PULL_CD = 11, PULL_STUN = 3.0;
@@ -2542,7 +3390,7 @@ function stealFrom(r, amt) {
 function absorbRival(r) {
   r.alive = false; r.absorb = 1;
   stats.absorbed = (stats.absorbed || 0) + 1;
-  const bonus = (1.2 + 0.9 * Math.pow(P.mass, 0.62)) * (mode === 'endless' ? 0.5 : 1);   // 吸收奖励（吸收之旅减半）
+  const bonus = (1.2 + 0.9 * Math.pow(P.mass, 0.62)) * (mode === 'endless' ? 0.5 : mode === 'story' ? 0.7 : 1);   // 吸收奖励（吸收之旅减半 / 快速模式 0.7）
   P.mass += bonus; stats.peak = Math.max(stats.peak, P.mass);
   P.glow = 1; flashV = 0.75; shake(26);
   SFX.roar(); SFX.grow();
@@ -2614,28 +3462,41 @@ function updateRivals(dt) {
       continue;
     }
     const dP = dist(r.x, r.y, P.x, P.y);
+    const isStory = mode === 'story';
     if (P.drainTarget === r) r.state = 'drained';
     else if (r.mass < P.mass * 0.7 && dP < 820) r.state = 'flee';
     else r.state = 'hunt';
-    const spd = speedOf(r.mass) * 0.92;
+    // 攻击欲望：快速模式更凶（更快、更远、冷却更短）
+    const AGGRO = isStory ? 1.32 : 1;
+    const spd = speedOf(r.mass) * 0.42 * AGGRO;   // 竞争者整体放慢（0.92 → 0.42），快速模式略快
     let ax = 0, ay = 0;
     if (r.state === 'flee') {
       const a = Math.atan2(r.y - P.y, r.x - P.x); ax = Math.cos(a); ay = Math.sin(a);
     } else if (r.state === 'drained') {
       ax = Math.sin(time * 8) * 0.5; ay = Math.cos(time * 7) * 0.5;
     } else {
+      const huntRange = (r.h * 2.4 + 70) * 2.6 * AGGRO;
+      const canWin = r.mass >= P.mass * 0.85;
       if (r.think <= 0) {
-        r.think = rand(1.0, 2.2);
+        r.think = rand(0.8, 1.8) / AGGRO;
         let best = null, bd = 2200;
         for (const p of people) { if (!p.alive) continue; const d = dist(p.x, p.y, r.x, r.y); if (d < bd) { bd = d; best = p; } }
-        if (best) { r.tx = best.x; r.ty = best.y; r.tgtPerson = best; r.tgtBuild = null; }
-        else {
+        if (canWin && dP < huntRange && Math.random() < (isStory ? 0.8 : 0.55)) {
+          // 玩家可猎杀 → 高概率直扑玩家（攻击欲望核心）
+          r.tx = P.x; r.ty = P.y; r.tgtPerson = null; r.tgtBuild = null; r.huntP = true;
+        } else if (canWin && dP < huntRange && dP < bd) {
+          r.tx = P.x; r.ty = P.y; r.tgtPerson = null; r.tgtBuild = null; r.huntP = true;
+        } else if (best) {
+          r.tx = best.x; r.ty = best.y; r.tgtPerson = best; r.tgtBuild = null; r.huntP = false;
+        } else {
           let bb = null, bd2 = 1700;
           for (const b of buildings) { if (b.dead) continue; const d = dist(b.x, b.y, r.x, r.y); if (d < bd2) { bd2 = d; bb = b; } }
-          if (bb) { r.tx = bb.x; r.ty = bb.y; r.tgtBuild = bb; r.tgtPerson = null; }
-          else { r.tx = rand(400, WORLD.w - 400); r.ty = rand(400, WORLD.h - 400); r.tgtPerson = null; r.tgtBuild = null; }
+          if (bb) { r.tx = bb.x; r.ty = bb.y; r.tgtBuild = bb; r.tgtPerson = null; r.huntP = false; }
+          else { r.tx = rand(400, WORLD.w - 400); r.ty = rand(400, WORLD.h - 400); r.tgtPerson = null; r.tgtBuild = null; r.huntP = false; }
         }
       }
+      if (r.huntP && canWin && dP < huntRange) { r.tx = P.x; r.ty = P.y; }
+      else if (r.huntP) r.huntP = false;
       const a = Math.atan2(r.ty - r.y, r.tx - r.x);
       ax = Math.cos(a); ay = Math.sin(a);
       if (r.tgtPerson && !r.tgtPerson.alive) r.tgtPerson = null;
@@ -2652,7 +3513,7 @@ function updateRivals(dt) {
           r.cd = 1.6; r.flash = 1;
           addShock(r.x, r.y + 4, r.h * 1.0 + 40, r.h);
           shake(6);
-          damageBuilding(r.tgtBuild, 8 + r.h * 0.55, r);
+          if (mode !== 'story') damageBuilding(r.tgtBuild, 8 + r.h * 0.55, r);   // 快速模式竞争者不拆楼
         }
         r.tgtBuild = null; r.think = 0;
       }
@@ -2666,6 +3527,43 @@ function updateRivals(dt) {
     if (Math.hypot(r.vx, r.vy) > 20) {
       const fr = r.h * 0.15 + 8;
       for (const p of people) if (p.alive && dist(p.x, p.y, r.x, r.y) < fr) { p.alive = false; p.eaten = true; r.mass += 0.012; }
+    }
+    /* —— 攻击性技能：撕咬 —— 前摇（红光预警，可躲）→ 命中让玩家体型下降 ——
+       快速模式：前摇更短、范围更大、冷却更短、伤害更高 */
+    r.atkCd = Math.max(0, (r.atkCd || 0) - dt);
+    r.atkFx = Math.max(0, (r.atkFx || 0) - dt * 1.6);
+    const biteDmg = isStory ? 0.13 : 0.10;
+    const biteWd = isStory ? 0.6 : 0.8;
+    const atkRange = (r.h * 2.4 + 70) * (isStory ? 1.18 : 1);
+    if (r.atkT > 0) {
+      r.atkT = Math.max(0, r.atkT - dt);
+      r.vx *= 0.25; r.vy *= 0.25;
+      if (r.atkT === 0) {
+        r.atkCd = isStory ? rand(4.5, 7) : rand(6.5, 9.5);
+        r.atkFx = 1;
+        if (dist(r.x, r.y, P.x, P.y) <= atkRange * 1.08) {
+          const before = P.mass;
+          P.mass = Math.max(START_MASS, P.mass * (1 - biteDmg));
+          P.h = hOf(P.mass);
+          r.mass += before * biteDmg * 0.6;             // 抢到的体型喂给竞争者，它会更难缠
+          r.h = hOf(r.mass);
+          P.hitCount = (P.hitCount || 0) + 1;
+          stats.hits = (stats.hits || 0) + 1;
+          P.harm = 1; P.glow = 0; flashV = Math.max(flashV, 0.8); shake(22);
+          SFX.roar(); SFX.crunch();
+          burst(P.x, P.y - P.h * 0.55, 26, { sp0: 60, sp1: 300, r0: 2, r1: 7, color: '#FF7A6A', l0: .5, l1: 1.2, g: -20 });
+          floater(P.x, P.y - P.h * 1.05, '被 ' + r.name + ' 撕咬！体型 -' + Math.round(biteDmg * 100) + '%', '#FF9A8A');
+          toast('<b>' + r.name + '</b> 撕咬了你：体型 ' + before.toFixed(1) + ' → <b>' + P.mass.toFixed(1) + '</b>（' +
+            (isStory ? '已中 ' + P.hitCount + ' / 4 次' : '体型 -' + Math.round(biteDmg * 100) + '%') + '）');
+          if (isStory && P.hitCount >= 4) { showLose(); return; }
+        } else {
+          floater(r.x, r.y - r.h * 0.8, '扑空了', '#ffd9a0');
+        }
+      }
+    } else if (r.atkCd <= 0 && r.state !== 'flee' && r.state !== 'drained' && dP <= atkRange) {
+      r.atkT = biteWd;                          // 起手：红光预警，可躲
+      r.atkCd = 0.35;
+      SFX.roar();
     }
   }
 }
@@ -2761,14 +3659,38 @@ function updatePeople(dt) {
       p.vx = Math.cos(p.wob * 0.8) * p.spd * 0.3;
       p.vy = Math.sin(p.wob * 1.1) * p.spd * 0.3;
     }
+    const oldX = p.x, oldY = p.y;
     p.x = clamp(p.x + p.vx * dt, 20, WORLD.w - 20);
     p.y = clamp(p.y + p.vy * dt, 20, WORLD.h - 20);
+    // 地面车辆（有机场归属）：只能在机场周边活动，且不许压到机场 / 走进水里
+    if (p.home) {
+      const H = p.home;
+      const bad = (function () {
+        if (Math.abs(p.x - H.x) < H.w * 0.55 && Math.abs(p.y - H.y) < H.d * 0.6) return 'ap';
+        if (Math.hypot(p.x - H.x, p.y - H.y) > H.r) return 'out';
+        if (p.wetTest && p.wetTest(p.x, p.y)) return 'wet';
+        return null;
+      })();
+      if (bad) {
+        let nx = oldX, ny = oldY, ok = false;
+        for (let t = 0; t < 14 && !ok; t++) {
+          const a = Math.atan2(oldY - H.y, oldX - H.x) + rand(-0.9, 0.9);
+          const rr = H.r * rand(0.4, 0.86);
+          nx = H.x + Math.cos(a) * rr; ny = H.y + Math.sin(a) * rr;
+          ok = !(p.wetTest && p.wetTest(nx, ny)) &&
+            !(Math.abs(nx - H.x) < H.w * 0.5 && Math.abs(ny - H.y) < H.d * 0.5);
+        }
+        p.x = nx; p.y = ny;
+        p.wob += 1.1;
+      }
+    }
     p.phase += dt * (5 + fear * 9);
   }
 }
 function updateCars(dt) {
   for (const c of cars) {
     if (!c.alive) { c.dead = Math.min(1, c.dead + dt * 0.4); continue; }
+    const px0 = c.x, py0 = c.y;
     if (c.dir === 0) c.x += c.spd * dt; else if (c.dir === 2) c.x -= c.spd * dt;
     else if (c.dir === 1) c.y += c.spd * dt; else c.y -= c.spd * dt;
     const mX = Math.abs(((c.x % BLOCK) + BLOCK) % BLOCK), mY = Math.abs(((c.y % BLOCK) + BLOCK) % BLOCK);
@@ -2776,6 +3698,24 @@ function updateCars(dt) {
     if (c.x < 50) c.dir = 0; else if (c.x > WORLD.w - 50) c.dir = 2;
     if (c.y < 50) c.dir = 1; else if (c.y > WORLD.h - 50) c.dir = 3;
     c.x = clamp(c.x, 30, WORLD.w - 30); c.y = clamp(c.y, 30, WORLD.h - 30);
+    if (c.home) {                                   // 车流同样只在机场周边活动，绝不入水/压机场
+      const H = c.home;
+      const inAp = Math.abs(c.x - H.x) < H.w * 0.52 && Math.abs(c.y - H.y) < H.d * 0.56;
+      const out = Math.hypot(c.x - H.x, c.y - H.y) > H.r;
+      const wet = c.wetTest && c.wetTest(c.x, c.y);
+      if (inAp || out || wet) {
+        let nx = px0, ny = py0, ok = false;
+        for (let t = 0; t < 14 && !ok; t++) {
+          const a = Math.atan2(py0 - H.y, px0 - H.x) + rand(-0.8, 0.8);
+          const rr = H.r * rand(0.45, 0.85);
+          nx = H.x + Math.cos(a) * rr; ny = H.y + Math.sin(a) * rr;
+          ok = !(c.wetTest && c.wetTest(nx, ny)) &&
+            !(Math.abs(nx - H.x) < H.w * 0.5 && Math.abs(ny - H.y) < H.d * 0.5);
+        }
+        c.x = nx; c.y = ny;
+        c.dir = randInt(0, 3);
+      }
+    }
     c.phase += dt * 3;
   }
 }
@@ -2809,6 +3749,7 @@ function updateParticles(dt) {
 }
 /* ---------------- 相机 ---------------- */
 function updateCamera(dt) {
+  if (camSnapNext) { camSnapNext = false; cam.x = P.x; cam.y = P.y - P.h * 0.5; }
   if (state === 'menu') {
     cam.zoom = lerp(cam.zoom, 0.5, 1 - Math.pow(0.2, dt));
     cam.x = WORLD.w / 2 + Math.cos(time * 0.055) * 1500;
@@ -2817,8 +3758,10 @@ function updateCamera(dt) {
   }
   // 目标：让角色在屏幕上始终占据可读高度，且**永远能看见全身**（以身体中心为镜头目标）
   const ratio = Math.max(1, P.h / BASE_H);
-  const targetPx = clamp(118 + 34 * Math.log2(ratio), 118, VH * 0.5);   // 形象放大更快，判定框不会显得比角色大
-  const tz = clamp(targetPx / Math.max(1, P.h), 0.000001, 4.0);   // 上限放宽，小体型也能画得够大
+  // 吸收之旅的城区阶段：形象再翻倍（镜头更近，世界没变）
+  const stageBoost = (mode === 'endless' && stage === 'city') ? 2 : 1;
+  const targetPx = clamp((160 + 60 * Math.log2(ratio)) * CHAR_GAIN * stageBoost, 160, VH * 0.8 * VIEW_OUT);
+  const tz = clamp(targetPx / Math.max(1, P.h) / VIEW_OUT, 0.000001, 9.0);   // 以 1.5 倍视野拉远
   cam.zoom = lerp(cam.zoom, tz, 1 - Math.pow(0.002, dt));
   // 人物强制锁定在屏幕中央（不做任何前瞻偏移）
   cam.x = P.x;
@@ -2872,7 +3815,7 @@ function render(dt) {
   ctx.translate(-cam.x, -cam.y);
   const vr = viewRect();
   drawGround();
-  drawDecals();
+  if (!lowQ || decals.length < 24) drawDecals();
   for (const f of foods) if (!f.eaten && inView(f.x, f.y, vr)) drawFood(f);
   for (const c of cars) if (inView(c.x, c.y, vr)) drawCar(c);
   for (const t of trees) if (t.alive && inView(t.x, t.y, vr)) { /* 树在排序层绘制 */ }
@@ -2980,19 +3923,41 @@ function render(dt) {
         ctx.fillStyle = r.state === 'drained' ? '#63DCE8' : '#ffffff'; ctx.fill();
         ctx.restore();
       }
+      if (r.atkT > 0) {                                  // 撕咬起手：红色预警圈（可躲）
+        const t = 1 - r.atkT / 0.8;
+        ctx.save();
+        ctx.globalAlpha = 0.5 + 0.35 * Math.sin(time * 24);
+        ctx.beginPath(); ctx.arc(r.x, r.y + 4, r.h * (0.75 + t * 1.2), 0, TAU);
+        ctx.strokeStyle = '#FF5A46'; ctx.lineWidth = Math.max(3, r.h * 0.05); ctx.stroke();
+        ctx.globalAlpha = 0.3;
+        ctx.setLineDash([18, 14]);
+        ctx.beginPath(); ctx.arc(r.x, r.y + 4, r.h * 2.4 + 70, 0, TAU);
+        ctx.strokeStyle = 'rgba(255,90,70,.65)'; ctx.lineWidth = Math.max(2, r.h * 0.03); ctx.stroke();
+        ctx.restore();
+      }
+      if (r.atkFx > 0) {                                 // 咬中/扑空的特效
+        ctx.save();
+        ctx.globalAlpha = r.atkFx * 0.5;
+        ctx.beginPath(); ctx.arc(r.x, r.y + 4, r.h * (1.1 + (1 - r.atkFx) * 1.1), 0, TAU);
+        ctx.strokeStyle = '#FF8A6A'; ctx.lineWidth = Math.max(2, r.h * 0.04); ctx.stroke();
+        ctx.restore();
+      }
       drawRival(r.x, r.y, r.h, r.view, r.face, poseOf(r, false, dt), r.kind, r.pal);
     } else {
+      // 玩家角色：抵消镜头抖动与世界偏移，永远钉在屏幕正中央
+      const pinX = P.x - sx / Math.max(1e-6, cam.zoom);
+      const pinY = P.y - sy / Math.max(1e-6, cam.zoom);
       if (P.glow > 0.02) {
         ctx.save();
         ctx.globalAlpha = clamp(P.glow, 0, 1) * 0.32;
-        const g = ctx.createRadialGradient(P.x, P.y - P.h * 0.45, P.h * 0.1, P.x, P.y - P.h * 0.45, P.h * 0.95);
+        const g = ctx.createRadialGradient(pinX, pinY - P.h * 0.45, P.h * 0.1, pinX, pinY - P.h * 0.45, P.h * 0.95);
         g.addColorStop(0, 'rgba(99,220,232,.55)');
         g.addColorStop(1, 'rgba(99,220,232,0)');
-        ctx.beginPath(); ctx.arc(P.x, P.y - P.h * 0.45, P.h * 0.95, 0, TAU);
+        ctx.beginPath(); ctx.arc(pinX, pinY - P.h * 0.45, P.h * 0.95, 0, TAU);
         ctx.fillStyle = g; ctx.fill();
         ctx.restore();
       }
-      drawBreeze(P.x, P.y, P.h, P.view, P.face, poseOf(P, true, dt), C);
+      drawBreeze(pinX, pinY, P.h, P.view, P.face, poseOf(P, true, dt), C);
     }
   }
   // 冲击波
@@ -3121,17 +4086,23 @@ function updateHUD() {
   document.getElementById('statHeight').textContent = (P.h * UNIT_M).toFixed(1) + ' m';
   document.getElementById('statMass').textContent = P.mass.toFixed(2);
   document.getElementById('statTier').textContent =
-    (mode === 'endless' ? (stage === 'space' ? '宇宙 · ' : stage === 'macro' ? '巨型地貌 · ' : '吸收之旅 · ') : '体型阶段 · ') + tierName(P.mass);
+    (mode === 'endless'
+      ? (stage === 'space' ? '宇宙 · ' : stage === 'macro' ? '海岛大陆 · ' : '吸收之旅 · ')
+      : '体型阶段 · ') + tierName(P.mass);
   const ti = tierInfo(P.mass);
   document.getElementById('massBar').style.width = clamp(ti.p * 100, 1.5, 100) + '%';
   document.getElementById('tierHint').textContent = ti.final
     ? '已达最终阶段 · 无限之影'
     : '下一阶段 ' + ti.next + '：还差 ' + ti.need.toFixed(ti.need < 10 ? 2 : 0) + ' 体型（' + Math.round(ti.p * 100) + '%）';  const aliveRivals = rivals.filter(function (r) { return r.alive; }).length;
-  document.getElementById('skillHint').textContent = mode !== 'endless'
+  const eatTxt = P.eatCd > 0.3
+    ? 'E 吞噬 · 冷却 ' + P.eatCd.toFixed(1) + 's'
+    : 'E 吞噬 · 就绪（范围内一口清空，≤' + Math.round(DEVOUR_RATIO * 100) + '% 的大家伙也能吃）';
+  const pullTxt = mode !== 'endless'
     ? 'F 牵引 · 吸收之旅专属'
     : (P.pullCd > 0
       ? 'F 牵引 · 冷却 ' + P.pullCd.toFixed(1) + 's'
       : ('F 牵引 · 就绪（可拉 ' + aliveRivals + ' 个目标）'));
+  document.getElementById('skillHint').textContent = eatTxt + '　·　' + pullTxt;
   document.getElementById('statExtra').textContent =
     (mode === 'endless'
       ? (stage === 'space' ? '宇宙 · ' : stage === 'macro' ? '城市尺度 ×' + CS.toFixed(1) + ' · ' : '城市尺度 ×' + CS.toFixed(1) + ' · ')
@@ -3158,7 +4129,7 @@ function updateHint() {
       let eat = null, ed = reach;
       for (const p of people) if (p.alive) { const d = dist(p.x, p.y, P.x, P.y); if (d < ed) { ed = d; eat = sp ? '小行星' : mc ? '车辆' : '人'; } }
       for (const f of foods) if (!f.eaten) { const d = dist(f.x, f.y, P.x, P.y) * 0.9; if (d < ed) { ed = d; eat = sp ? '星核能量' : mc ? '集装箱' : '食物'; } }
-      if (eat) t = '长按 E：吞食' + eat;
+      if (eat) t = '长按 E：吞噬' + eat;
       else {
         const lim = sp ? P.h * 0.6 : mc ? 70 * CS : 64;
         for (const b of buildings) {
@@ -3192,7 +4163,7 @@ function update(dt) {
     updatePlayer(dt);
     updateDrain(dt);
     if (keys[' ']) doStomp();
-    if (keys['e']) tryEat();          // 长按 E 连续吞食（受吞食冷却限制）
+    if (keys['e']) tryEat();          // 长按 E：范围内吞噬（吞下大家伙会进 10 秒冷却）
   }
   updateRivals(dt);
   updatePeople(dt);
@@ -3237,12 +4208,13 @@ let last = performance.now(), acc = 0;
 function frame(now) {
   const dt = Math.min(0.034, (now - last) / 1000);
   last = now;
+  adaptQuality(dt);                                  // 帧时间偏高时自动降画质（移动端防卡）
   update(dt);
   render(dt);
   hudTick++;
-  if (hudTick % 3 === 0) { if (state === 'playing' || state === 'paused') { updateHUD(); updateHint(); updateRivalList(); } }
+  if (hudTick % 5 === 0) { if (state === 'playing' || state === 'paused') { updateHUD(); updateHint(); updateRivalList(); } }
   syncTouchUI();
-  if (hudTick % 6 === 0 && state !== 'menu') drawMinimap();
+  if (hudTick % 10 === 0 && state !== 'menu') drawMinimap();
   requestAnimationFrame(frame);
 }
 /* 场景切换：先淡出到黑，换图后再淡入（镜头不会突然拉近拉远） */
@@ -3278,12 +4250,13 @@ function enterMacro() {
   particles.length = floaters.length = shocks.length = rings.length = decals.length = 0;
   cam.x = P.x; cam.y = P.y - P.h * 0.5;
   buildRivalList();
-  toast('<b>山脉与巨型设施</b>：楼房已经太小了 —— 山、机场、体育场、巨塔都在脚下');
+  toast('<b>山脉级 · 海岛大陆</b>：楼层已经太小了 —— 现在踩的是雪山、森林、河流与微缩城市');
+  setTimeout(function () { toast('这片大陆很大：从山脉级一路玩到 <b>星系级</b> 才会进入宇宙'); }, 3200);
   setTimeout(function () { toast('山体够高时先绕开，长高之后再一脚踩平'); }, 3200);
 }
-/* 进入宇宙：踩星球与星系 */
+/* 进入宇宙：踩星球与星系（单一阶段，之后一直留在这里） */
 function enterSpace() {
-  stage = 'space';
+  stage = 'space'; spacePhase = 1;
   const keep = P.mass;
   generateWorld();
   P.mass = keep; P.h = hOf(P.mass);
@@ -3294,8 +4267,8 @@ function enterSpace() {
   buildRivalList();
   flashV = 0.9; shake(18);
   SFX.roar();
-  toast('<b>进入宇宙</b>：城市已经太小了 —— 现在踩的是星球与星系');
-  setTimeout(function () { toast('天体越大越硬，踩碎它们照样长体型；长按 E 吞掉小行星'); }, 3000);
+  toast('<b>进入宇宙</b>：城市已经太小了 —— 现在踩的是星球、星系与黑洞');
+  setTimeout(function () { toast('恒星 / 行星 / 卫星 / 星系 / 黑洞 / 脉冲星 / 超新星 / 星云 都在同一张星图上'); }, 3100);
 }
 /* 吸收之旅：城区被推平就换新城区；竞争者被吸收就补充更强的 */
 let endlessCheck = 0;
@@ -3321,13 +4294,20 @@ function updateEndless(dt) {
   let ab = 0, ap = 0;
   for (const b of buildings) if (!b.dead) ab++;
   for (const p of people) if (p.alive) ap++;
-  if (ab < 40 || ap < 70) beginTransition(refreshDistrict, true);
+  // 进度条所需的破坏量翻倍：城区/大陆要拆得更彻底才换图
+  const needAb = stage === 'macro' ? 20 : 40, needAp = stage === 'macro' ? 35 : 70;
+  if (ab < needAb || ap < needAp) beginTransition(refreshDistrict, true);
 }
 /* ---------------- 流程控制 ---------------- */
 let endingShown = false;
+let finalReached = false;          // 是否已到达宇宙级（此后换图会缩回该体型）
+let spacePhase = 1;                // 宇宙阶段：1=太阳系天体，2=深空天体（进入后不再变）
+let endingAt = 0;                  // 终章出现的时刻（用于输入保护期）
 function showEnding() {
   if (endingShown) return;
   endingShown = true;
+  finalReached = true;
+  endingAt = time;
   state = 'ending';
   P.vx = P.vy = 0;
   show('endingScreen', true);
@@ -3335,10 +4315,18 @@ function showEnding() {
   SFX.drainStop();
   if (SFX.chime) SFX.chime();
 }
-function hideEnding() {
+function hideEnding(keepPlaying) {
   show('endingScreen', false);
-  // 终章即结局：本局到此结束，直接回到标题界面
   SFX.drainStop();
+  if (keepPlaying) {
+    // 继续游玩：体型封顶在"刚到达宇宙级"的大小，并立刻按该体型刷新地图与位置
+    P.mass = FINAL_MASS; P.h = hOf(P.mass);
+    state = 'playing';
+    refreshDistrict();
+    toast('<b>继续游玩</b>：体型封顶在宇宙级 ' + FINAL_MASS + '，之后每次换图都会缩回这个体型');
+    return;
+  }
+  // 终章即结局：本局到此结束，直接回到标题界面
   state = 'menu';
   mode = 'story';
   resetRun();
@@ -3348,11 +4336,26 @@ function hideEnding() {
   show('winScreen', false); show('pauseScreen', false);
 }
 function show(id, on) { document.getElementById(id).classList.toggle('hidden', !on); }
+/* 返回主菜单：随时可以退出当前模式、回去选另一个模式 */
+function backToMenu() {
+  SFX.drainStop();
+  P.drainTarget = null; P.drainSet = null;
+  state = 'menu';
+  mode = 'story';
+  resetRun();
+  document.getElementById('toastWrap').innerHTML = '';
+  show('winScreen', false); show('pauseScreen', false); show('endingScreen', false);
+  show('startScreen', true);
+  show('hud', false);
+  const fb = document.getElementById('btnFree'); if (fb) fb.style.display = '';
+  syncTouchUI();
+}
 function startGame(m) {
   SFX.init(); SFX.drainStop();
   mode = (m === 'endless') ? 'endless' : 'story';
   resetRun();
-  endingShown = false; show('endingScreen', false);
+  endingShown = false; finalReached = false; spacePhase = 1; P.hitCount = 0; stats.hits = 0; show('endingScreen', false);
+  const fbR = document.getElementById('btnFree'); if (fbR) fbR.style.display = '';
   lastTier = tierName(P.mass);
   state = 'playing';
   show('startScreen', false); show('winScreen', false); show('pauseScreen', false);
@@ -3382,6 +4385,23 @@ function toggleMute() {
   SFX.setMuted(!SFX.isMuted());
   document.getElementById('btnMute').textContent = SFX.isMuted() ? '🔇 静音' : '🔊 音效';
 }
+function showLose() {
+  if (state === 'win' || state === 'lose') return;
+  state = 'lose';
+  SFX.drainStop(); P.drainTarget = null; P.drainSet = null;
+  document.getElementById('winTitle').textContent = '体型崩解 · 失败';
+  document.getElementById('winText').innerHTML = '被竞争者撕咬了 <b>4 次</b>，布瑞泽的体型散成了雾。<br>再来一次？';
+  document.getElementById('winStats').innerHTML =
+    '<div>被击次数<b>4</b></div>' +
+    '<div>最终体型<b>' + P.mass.toFixed(2) + '</b></div>' +
+    '<div>摧毁建筑<b>' + stats.buildings + '</b></div>' +
+    '<div>吞食人类<b>' + stats.eaten + '</b></div>' +
+    '<div>用时<b>' + Math.floor(runTime / 60) + ' 分 ' + Math.floor(runTime % 60) + ' 秒</b></div>';
+  const fb = document.getElementById('btnFree');
+  if (fb) fb.style.display = 'none';           // 失败时不给"继续游玩"
+  show('winScreen', true);
+  SFX.roar();
+}
 function showWin() {
   if (state === 'win') return;
   state = 'win';
@@ -3399,14 +4419,17 @@ function showWin() {
     '<div>用时<b>' + Math.floor(runTime / 60) + ' 分 ' + Math.floor(runTime % 60) + ' 秒</b></div>';
   show('winScreen', true);
 }
-document.getElementById('btnStart').onclick = () => startGame('story');
-document.getElementById('btnEndless').onclick = () => startGame('endless');
+document.getElementById('btnStart').onclick = () => startGame('story');document.getElementById('btnEndless').onclick = () => startGame('endless');
 document.getElementById('btnRestart').onclick = () => startGame(mode);
 document.getElementById('btnRestart2').onclick = () => startGame(mode);
 document.getElementById('btnResume').onclick = () => togglePause();
+document.getElementById('btnToMenu').onclick = () => backToMenu();
+document.getElementById('btnToMenu2').onclick = () => backToMenu();
 document.getElementById('btnPause').onclick = () => togglePause();
 document.getElementById('btnMute').onclick = toggleMute;
 document.getElementById('btnFree').onclick = () => { show('winScreen', false); state = 'playing'; toast('继续蹂躏这座城市吧'); };
+document.getElementById('btnEndFinish').onclick = () => hideEnding(false);
+document.getElementById('btnEndKeep').onclick = () => hideEnding(true);
 const refArt = null;
 
 /* ---------------- 启动 ---------------- */
