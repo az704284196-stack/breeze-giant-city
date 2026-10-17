@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
@@ -264,8 +264,13 @@ let BLOCK = BLOCK0, ROAD = ROAD0;
 let CS = 1;                          // 城市尺度：无尽模式随体型放大（快速模式恒为 1）
 let mode = 'story';                  // story | endless
 let stage = 'city';                  // city | macro | space
-const MACRO_MASS = 30;               // 山脉级：切到山脉与巨型设施地图
-const SPACE_MASS = 650;              // 大陆级阶段大幅缩短（1200 → 650）
+const MACRO_MASS = 30;               // 快速模式：城市阶段上限
+const SPACE_MASS = 650;              // 快速模式：海岛大陆阶段上限
+/* 吸收之旅（无尽模式）两个阶段上限都提高了：城市更久、海岛大陆更久 */
+const MACRO_MASS_E = 50;             // 吸收之旅：城市阶段 30 → 50
+const SPACE_MASS_E = 1000;           // 吸收之旅：海岛大陆 650 → 1000
+const macroMassAt = () => mode === 'endless' ? MACRO_MASS_E : MACRO_MASS;
+const spaceMassAt = () => mode === 'endless' ? SPACE_MASS_E : SPACE_MASS;
 const UNIT_M = 0.22;                 // 1 世界单位 ≈ 0.22 米
 const BASE_H = 60, START_MASS = 1;   // 起始身高 60 单位（相对城市建筑比原来大一倍）
 /* 视野倍数：3.4 = 比最初多看到 240% 的范围（角色屏高上限同步下调，避免撑满画面） */
@@ -281,7 +286,7 @@ const TIERS = [
   [1.6, '幼兽'], [3, '街区恶犬'], [5.5, '楼宇破坏者'], [9, '城市巨影'], [15, '都市主宰'],
   [24, '传说巨兽'], [45, '山脉级'], [90, '大陆级'], [200, '行星级'],
   // 星系级 = 进入宇宙的那一刻（恒星级已删除，中间不再有多余档位）
-  [SPACE_MASS, '星系级'], [SPACE_MASS * 6.2, '星团级'], [30000, '宇宙级'], [1e9, '无限之影']
+  [SPACE_MASS_E, '星系级'], [SPACE_MASS_E * 6.2, '星团级'], [30000, '宇宙级'], [1e9, '无限之影']
 ];
 
 /* 可选外部音效：把 mp3 放进 assets/sfx/ 就会自动替代合成音
@@ -4302,8 +4307,8 @@ const FINAL_MASS = 30000;              // 最后一个阶段（宇宙级）触�
 function updateEndless(dt) {
   if (mode !== 'endless') return;
   if (!endingShown && P.mass >= FINAL_MASS) { showEnding(); return; }
-  if (stage === 'city' && P.mass >= MACRO_MASS) { beginTransition(enterMacro); return; }
-  if (stage === 'macro' && P.mass >= SPACE_MASS) { beginTransition(enterSpace); return; }
+  if (stage === 'city' && P.mass >= macroMassAt()) { beginTransition(enterMacro); return; }
+  if (stage === 'macro' && P.mass >= spaceMassAt()) { beginTransition(enterSpace); return; }
   endlessCheck -= dt;
   if (endlessCheck > 0) return;
   endlessCheck = 0.6;
