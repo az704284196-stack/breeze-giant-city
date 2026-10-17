@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
@@ -3561,32 +3561,49 @@ function updateRivals(dt) {
       const fr = r.h * 0.15 + 8;
       for (const p of people) if (p.alive && dist(p.x, p.y, r.x, r.y) < fr) { p.alive = false; p.eaten = true; r.mass += 0.012; }
     }
-    /* —— 攻击性技能：撕咬 —— 前摇（红光预警，可躲）→ 命中让玩家体型下降 ——
-       快速模式：前摇更短、范围更大、冷却更短、伤害更高 */
+    /* —— 攻击方式（重做）：蓄力 → 前冲扑咬，可被打断，伤害按体型差计算 ——
+       1) 蓄力 0.8s 亮红光圈（快速模式 0.6s）
+       2) 蓄力期间若被踩踏/牵引/眩晕 → 直接打断，攻击取消
+       3) 命中判定用"体型差"：对手越大伤害越高，反向则很轻（更合理）
+       4) 扑咬会向前冲一段（有位移表现），但仍只有一次判定 */
     r.atkCd = Math.max(0, (r.atkCd || 0) - dt);
     r.atkFx = Math.max(0, (r.atkFx || 0) - dt * 1.6);
-    const biteDmg = isStory ? 0.13 : 0.10;
     const biteWd = isStory ? 0.6 : 0.8;
-    const atkRange = (r.h * 2.4 + 70) * (isStory ? 1.18 : 1);
+    // 伤害按体型比例：玩家远大于对手时几乎咬不动，对手远大于玩家时更痛
+    const sizeRatio = r.mass / Math.max(0.001, P.mass);
+    const biteDmg = clamp(0.04 + 0.1 * Math.min(2.2, sizeRatio), 0.04, isStory ? 0.16 : 0.13);
+    const atkRange = (r.h * 2.0 + 60) * (isStory ? 1.15 : 1);
     if (r.atkT > 0) {
       r.atkT = Math.max(0, r.atkT - dt);
       r.vx *= 0.25; r.vy *= 0.25;
+      // 被打断：踩踏（flash 满值）/ 眩晕 / 被牵引
+      if (r.stun > 0 || r.pullT > 0 || r.flash > 0.9) {
+        r.atkT = 0; r.atkCd = rand(3, 5);
+        floater(r.x, r.y - r.h * 0.8, '被打断！', '#9fe8a0');
+        burst(r.x, r.y - r.h * 0.5, 12, { color: '#9BE8B6', sp0: 30, sp1: 140, r0: 2, r1: 5 });
+        continue;
+      }
       if (r.atkT === 0) {
         r.atkCd = isStory ? rand(4.5, 7) : rand(6.5, 9.5);
         r.atkFx = 1;
-        if (dist(r.x, r.y, P.x, P.y) <= atkRange * 1.08) {
+        const dHit = dist(r.x, r.y, P.x, P.y);
+        // 前冲：向玩家方向扑出一段（纯表现 + 小位移）
+        const lunge = Math.min(r.h * 0.55, Math.max(0, dHit - r.h * 0.3));
+        if (dHit > 1) { r.x += (P.x - r.x) / dHit * lunge; r.y += (P.y - r.y) / dHit * lunge; }
+        if (dHit <= atkRange) {
           const before = P.mass;
-          P.mass = Math.max(START_MASS, P.mass * (1 - biteDmg));
+          const lost = before * biteDmg;
+          P.mass = Math.max(START_MASS, before * (1 - biteDmg));
           P.h = hOf(P.mass);
-          r.mass += before * biteDmg * 0.6;             // 抢到的体型喂给竞争者，它会更难缠
+          r.mass += lost * 0.6;                       // 咬到的体型喂给竞争者
           r.h = hOf(r.mass);
           P.hitCount = (P.hitCount || 0) + 1;
           stats.hits = (stats.hits || 0) + 1;
-          P.harm = 1; P.glow = 0; flashV = Math.max(flashV, 0.8); shake(22);
+          P.harm = 1; P.glow = 0; flashV = Math.max(flashV, 0.8); shake(20);
           SFX.roar(); SFX.crunch();
-          burst(P.x, P.y - P.h * 0.55, 26, { sp0: 60, sp1: 300, r0: 2, r1: 7, color: '#FF7A6A', l0: .5, l1: 1.2, g: -20 });
-          floater(P.x, P.y - P.h * 1.05, '被 ' + r.name + ' 撕咬！体型 -' + Math.round(biteDmg * 100) + '%', '#FF9A8A');
-          toast('<b>' + r.name + '</b> 撕咬了你：体型 ' + before.toFixed(1) + ' → <b>' + P.mass.toFixed(1) + '</b>（' +
+          burst(P.x, P.y - P.h * 0.55, 22, { sp0: 60, sp1: 300, r0: 2, r1: 7, color: '#FF7A6A', l0: .5, l1: 1.2, g: -20 });
+          floater(P.x, P.y - P.h * 1.05, '被 ' + r.name + ' 扑咬！体型 -' + Math.round(biteDmg * 100) + '%', '#FF9A8A');
+          toast('<b>' + r.name + '</b> 扑咬了你：体型 ' + before.toFixed(1) + ' → <b>' + P.mass.toFixed(1) + '</b>（' +
             (isStory ? '已中 ' + P.hitCount + ' / 4 次' : '体型 -' + Math.round(biteDmg * 100) + '%') + '）');
           if (isStory && P.hitCount >= 4) { showLose(); return; }
         } else {
@@ -3594,7 +3611,7 @@ function updateRivals(dt) {
         }
       }
     } else if (r.atkCd <= 0 && r.state !== 'flee' && r.state !== 'drained' && dP <= atkRange) {
-      r.atkT = biteWd;                          // 起手：红光预警，可躲
+      r.atkT = biteWd;                          // 起手：红光预警，可躲 / 可打断
       r.atkCd = 0.35;
       SFX.roar();
     }
@@ -3610,7 +3627,7 @@ function updatePlayer(dt) {
   const magIn = Math.hypot(ax, ay);
   P.moving = magIn > 0.06;
   P.sprint = keys['shift'] ? 1 : 0;
-  const maxSpd = speedOf(P.mass) * (P.sprint ? 1.38 : 1) * (P.moving ? clamp(magIn, 0.34, 1) : 1);
+  const maxSpd = speedOf(P.mass) * (mode === 'story' ? 0.78 : 1) * (P.sprint ? 1.38 : 1) * (P.moving ? clamp(magIn, 0.34, 1) : 1);   // 快速模式玩家减速到 78%
   if (P.moving) {
     const L = Math.hypot(ax, ay) || 1; ax /= L; ay /= L;
     // 直接朝目标速度收敛：起步快、转向干脆，不再“溜冰”
@@ -3792,11 +3809,13 @@ function updateCamera(dt) {
   // 目标：让角色在屏幕上始终占据可读高度，且**永远能看见全身**（以身体中心为镜头目标）
   const ratio = Math.max(1, P.h / BASE_H);
   // 吸收之旅的第一阶段（城区）：形象倍率再翻倍（2 → 4），上限也同步放宽一点
+  // 吸收之旅整体视野再 ×2（世界看得更远，角色相应变小）
+  const viewMul = mode === 'endless' ? 2 : 1;
   const inFirstStage = (mode === 'endless' && stage === 'city');
   const stageBoost = inFirstStage ? 4 : 1;
   const capPx = VH * (inFirstStage ? 0.6 : SCREEN_CAP) * VIEW_OUT;
   const targetPx = clamp((160 + 60 * Math.log2(ratio)) * CHAR_GAIN * stageBoost, 160, capPx);
-  const tz = clamp(targetPx / Math.max(1, P.h) / VIEW_OUT, 0.000001, 9.0);   // 以 1.5 倍视野拉远
+  const tz = clamp(targetPx / Math.max(1, P.h) / VIEW_OUT / viewMul, 0.000001, 9.0);   // 以 1.5 倍视野拉远
   cam.zoom = lerp(cam.zoom, tz, 1 - Math.pow(0.002, dt));
   // 人物强制锁定在屏幕中央（不做任何前瞻偏移）
   cam.x = P.x;
