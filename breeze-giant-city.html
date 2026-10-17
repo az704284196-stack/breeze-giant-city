@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
@@ -168,7 +168,7 @@ h1 span{font-size:16px;color:#63DCE8;letter-spacing:3px;display:block;margin-top
       <button class="primary" id="btnStart">快 速 模 式</button>
       <button class="primary endless" id="btnEndless">吸 收 之 旅</button>
     </div>
-    <p class="tip">快速模式：吸收三头竞争者即通关　·　吸收之旅：体型无上限，山脉级与大陆级在海岛大陆上，到星系级立刻进入宇宙</p>
+    <p class="tip">快速模式：把体型吃到竞争者的 3 倍，踩死三头竞争者即通关（无法吸收）　·　吸收之旅：体型无上限，山脉级与大陆级在海岛大陆上，到星系级立刻进入宇宙</p>
     <p class="tip">单文件 Canvas 游戏 · 无需联网 · 可选：把 step.mp3 / collapse.mp3 放进 assets/sfx/ 即可用你自己的音效</p>
   </div>
 </div>
@@ -270,6 +270,7 @@ const UNIT_M = 0.22;                 // 1 世界单位 ≈ 0.22 米
 const BASE_H = 60, START_MASS = 1;   // 起始身高 60 单位（相对城市建筑比原来大一倍）
 /* 视野倍数：3.4 = 比最初多看到 240% 的范围（角色屏高上限同步下调，避免撑满画面） */
 const SCREEN_CAP = 0.45;             // 角色最多占屏幕高度的 45%（原来 80%，太大了）
+const STOMP_KILL_RATIO = 3;          // 体型达到竞争者 3 倍 → 踩踏可以直接踩死
 const VIEW_OUT = 3.4;                // 视野再翻倍（1.7 → 3.4）
 const CHAR_GAIN = 2.0;               // 相机目标屏高倍数：配合角色世界尺寸翻倍，精确落到"视野 ×1.5"
 const CITY_SHRINK = 0.62;            // 城市建筑整体缩小：开局巨兽相对建筑更大
@@ -3263,15 +3264,32 @@ function doStomp() {
   for (const r of rivals) {
     if (!r.alive) continue;
     const d = dist(r.x, r.y, P.x, P.y);
-    if (d < R * 1.05) {
-      r.flash = 1;
-      const push = (1 - d / (R * 1.05)) * 70;
-      r.x += (r.x - P.x) / (d || 1) * push; r.y += (r.y - P.y) / (d || 1) * push;
-      if (P.mass > r.mass) stealFrom(r, r.mass * 0.07 * clamp(P.mass / r.mass, 0.3, 3));
-      shake(9);
+    if (d >= R * 1.05) continue;
+    // 新能力：体型达到竞争者 3 倍 → 一脚踩死（像踩楼一样）
+    if (P.mass >= r.mass * STOMP_KILL_RATIO) {
+      killRival(r);
+      continue;
     }
+    r.flash = 1;
+    const push = (1 - d / (R * 1.05)) * 70;
+    r.x += (r.x - P.x) / (d || 1) * push; r.y += (r.y - P.y) / (d || 1) * push;
+    if (P.mass > r.mass) stealFrom(r, r.mass * 0.07 * clamp(P.mass / r.mass, 0.3, 3));
+    shake(9);
   }
   if (stats.stomped === 0 && stats.eaten === 0) { /* 首次提示由 toast 统一处理 */ }
+}
+/* 体型 ≥ 竞争者 3 倍时，踩踏可以直接把它踩死 */
+function killRival(r) {
+  r.alive = false; r.absorb = 1; r.flash = 1;
+  stats.stompedRival = (stats.stompedRival || 0) + 1;
+  const gain = Math.max(0.5, r.mass * 0.55) * (mode === 'endless' ? 0.5 : 1);
+  P.mass += gain; stats.peak = Math.max(stats.peak, P.mass);
+  P.glow = 1; flashV = Math.max(flashV, 0.6); shake(30);
+  SFX.roar(); SFX.collapse(1.2);
+  burst(r.x, r.y - r.h * 0.5, 46, { sp0: 80, sp1: 380, r0: 2, r1: 9, color: '#FFB86A', l0: .6, l1: 1.5, g: 20 });
+  floater(r.x, r.y - r.h * 0.9, '踩死了 ' + r.name + '！+' + gain.toFixed(1), '#FFD08A');
+  toast('一脚踩死了 <b>' + r.name + '</b>！（体型相差 3 倍以上）');
+  if (mode === 'story' && rivals.every(function (x) { return !x.alive; })) setTimeout(showWin, 900);
 }
 /* —— 机制 3/4：吞噬 —— 一口吞掉范围内的一切 ——
    范围：身高 × 0.8（宇宙关 0.9）
@@ -3399,6 +3417,15 @@ function absorbRival(r) {
   if (mode === 'story' && rivals.every(x => !x.alive)) setTimeout(showWin, 900);
 }
 function updateDrain(dt) {
+  // 快速模式：吸收能力被封印，只能靠踩踏解决竞争者
+  if (mode === 'story') {
+    if (keys['q'] && time - (updateDrain.lastToast || 0) > 2.5) {
+      updateDrain.lastToast = time;
+      toast('快速模式<b>无法吸收</b> —— 把体型吃到竞争者的 3 倍，一脚踩死它');
+    }
+    if (P.drainTarget) { P.drainTarget = null; P.drainSet = null; SFX.drainStop(); }
+    return;
+  }
   const want = !!keys['q'];
   const range = P.h * 1.15;
   if (!want) { if (P.drainTarget) { P.drainTarget = null; P.drainSet = null; SFX.drainStop(); } return; }
@@ -4097,7 +4124,7 @@ function updateHUD() {
     ? 'E 吞噬 · 冷却 ' + P.eatCd.toFixed(1) + 's'
     : 'E 吞噬 · 就绪（范围内一口清空，≤' + Math.round(DEVOUR_RATIO * 100) + '% 的大家伙也能吃）';
   const pullTxt = mode !== 'endless'
-    ? 'F 牵引 · 吸收之旅专属'
+    ? 'Q 吸收 · 快速模式已封禁（体型达 3 倍可踩死）　·　F 牵引 · 吸收之旅专属'
     : (P.pullCd > 0
       ? 'F 牵引 · 冷却 ' + P.pullCd.toFixed(1) + 's'
       : ('F 牵引 · 就绪（可拉 ' + aliveRivals + ' 个目标）'));
@@ -4255,7 +4282,7 @@ function enterMacro() {
 }
 /* 进入宇宙：踩星球与星系（单一阶段，之后一直留在这里） */
 function enterSpace() {
-  stage = 'space'; spacePhase = 1;
+  stage = 'space';
   const keep = P.mass;
   generateWorld();
   P.mass = keep; P.h = hOf(P.mass);
@@ -4294,13 +4321,14 @@ function updateEndless(dt) {
   for (const b of buildings) if (!b.dead) ab++;
   for (const p of people) if (p.alive) ap++;
   // 进度条所需的破坏量翻倍：城区/大陆要拆得更彻底才换图
-  const needAb = stage === 'macro' ? 20 : 40, needAp = stage === 'macro' ? 35 : 70;
+  // 吸收之旅：每个阶段要求的破坏量翻倍（残留阈值减半）
+  const needAb = stage === 'macro' ? 10 : 20, needAp = stage === 'macro' ? 18 : 35;
   if (ab < needAb || ap < needAp) beginTransition(refreshDistrict, true);
 }
 /* ---------------- 流程控制 ---------------- */
 let endingShown = false;
 let finalReached = false;          // 是否已到达宇宙级（此后换图会缩回该体型）
-let spacePhase = 1;                // 宇宙阶段：1=太阳系天体，2=深空天体（进入后不再变）
+
 let endingAt = 0;                  // 终章出现的时刻（用于输入保护期）
 function showEnding() {
   if (endingShown) return;
@@ -4353,7 +4381,7 @@ function startGame(m) {
   SFX.init(); SFX.drainStop();
   mode = (m === 'endless') ? 'endless' : 'story';
   resetRun();
-  endingShown = false; finalReached = false; spacePhase = 1; P.hitCount = 0; stats.hits = 0; show('endingScreen', false);
+  endingShown = false; finalReached = false; P.hitCount = 0; stats.hits = 0; show('endingScreen', false);
   const fbR = document.getElementById('btnFree'); if (fbR) fbR.style.display = '';
   lastTier = tierName(P.mass);
   state = 'playing';
@@ -4366,7 +4394,7 @@ function startGame(m) {
     toast('<b>吸收之旅</b>：体型没有上限 —— 城市会跟着你一起变大');
     setTimeout(() => toast('城区被推平后会换成更大的新城区，竞争者也会不断补位'), 2800);
   } else {
-    toast('目标：吸收三头竞争者 —— <b>踩踏 / 吞食 / 抢夺体型</b>');
+    toast('目标：踩死三头竞争者 —— 体型达到 <b>3 倍</b> 时一脚踩死（本模式无法吸收）');
     setTimeout(() => toast('按住 <b>WASD</b> 走进人群，空格 <b>踩踏</b>整条街'), 2600);
   }
 }
@@ -4405,15 +4433,15 @@ function showWin() {
   if (state === 'win') return;
   state = 'win';
   SFX.drainStop(); P.drainTarget = null;
-  document.getElementById('winTitle').textContent = '体型掠夺 · 完成';
-  document.getElementById('winText').innerHTML = '三头巨兽的体型都已归于布瑞泽。<br>现在这座城市里最高的东西，不是楼。';
+  document.getElementById('winTitle').textContent = '巨兽践踏 · 完成';
+  document.getElementById('winText').innerHTML = '三头竞争者都被布瑞泽踩在脚下。<br>现在这座城市里最高的东西，不是楼。';
   document.getElementById('winStats').innerHTML =
+    '<div>踩死竞争者<b>' + (stats.stompedRival || 0) + '</b></div>' +
     '<div>最终身高<b>' + (P.h * UNIT_M).toFixed(1) + ' m</b></div>' +
     '<div>体型质量<b>' + P.mass.toFixed(2) + '</b></div>' +
     '<div>吞食人类<b>' + stats.eaten + '</b></div>' +
     '<div>踩踏行人<b>' + stats.stomped + '</b></div>' +
     '<div>摧毁建筑<b>' + stats.buildings + '</b></div>' +
-    '<div>掠得体型<b>' + stats.stolen.toFixed(2) + '</b></div>' +
     '<div>吞食食物<b>' + stats.food + '</b></div>' +
     '<div>用时<b>' + Math.floor(runTime / 60) + ' 分 ' + Math.floor(runTime % 60) + ' 秒</b></div>';
   show('winScreen', true);
