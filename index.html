@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
@@ -267,8 +267,8 @@ let stage = 'city';                  // city | macro | space
 const MACRO_MASS = 30;               // 快速模式：城市阶段上限
 const SPACE_MASS = 650;              // 快速模式：海岛大陆阶段上限
 /* 吸收之旅（无尽模式）两个阶段上限都提高了：城市更久、海岛大陆更久 */
-const MACRO_MASS_E = 50;             // 吸收之旅：城市阶段 30 → 50
-const SPACE_MASS_E = 1000;           // 吸收之旅：海岛大陆 650 → 1000
+const MACRO_MASS_E = 150;            // 吸收之旅：城市阶段 30 → 50 → 150（×3）
+const SPACE_MASS_E = 3000;           // 吸收之旅：海岛大陆 650 → 1000 → 3000（×3）
 const macroMassAt = () => mode === 'endless' ? MACRO_MASS_E : MACRO_MASS;
 const spaceMassAt = () => mode === 'endless' ? SPACE_MASS_E : SPACE_MASS;
 const UNIT_M = 0.22;                 // 1 世界单位 ≈ 0.22 米
@@ -3789,9 +3789,11 @@ function updateCamera(dt) {
   }
   // 目标：让角色在屏幕上始终占据可读高度，且**永远能看见全身**（以身体中心为镜头目标）
   const ratio = Math.max(1, P.h / BASE_H);
-  // 吸收之旅的城区阶段：形象再翻倍（镜头更近，世界没变）
-  const stageBoost = (mode === 'endless' && stage === 'city') ? 2 : 1;
-  const targetPx = clamp((160 + 60 * Math.log2(ratio)) * CHAR_GAIN * stageBoost, 160, VH * SCREEN_CAP * VIEW_OUT);
+  // 吸收之旅的第一阶段（城区）：形象倍率再翻倍（2 → 4），上限也同步放宽一点
+  const inFirstStage = (mode === 'endless' && stage === 'city');
+  const stageBoost = inFirstStage ? 4 : 1;
+  const capPx = VH * (inFirstStage ? 0.6 : SCREEN_CAP) * VIEW_OUT;
+  const targetPx = clamp((160 + 60 * Math.log2(ratio)) * CHAR_GAIN * stageBoost, 160, capPx);
   const tz = clamp(targetPx / Math.max(1, P.h) / VIEW_OUT, 0.000001, 9.0);   // 以 1.5 倍视野拉远
   cam.zoom = lerp(cam.zoom, tz, 1 - Math.pow(0.002, dt));
   // 人物强制锁定在屏幕中央（不做任何前瞻偏移）
