@@ -268,8 +268,9 @@ const MACRO_MASS = 30;               // 山脉级：切到山脉与巨型设施�
 const SPACE_MASS = 650;              // 大陆级阶段大幅缩短（1200 → 650）
 const UNIT_M = 0.22;                 // 1 世界单位 ≈ 0.22 米
 const BASE_H = 60, START_MASS = 1;   // 起始身高 60 单位（相对城市建筑比原来大一倍）
-/* 视野倍数：1.7 = 比最初多看到 70% 的范围（角色世界尺寸已翻倍，屏幕像素反而更大） */
-const VIEW_OUT = 1.7;
+/* 视野倍数：3.4 = 比最初多看到 240% 的范围（角色屏高上限同步下调，避免撑满画面） */
+const SCREEN_CAP = 0.45;             // 角色最多占屏幕高度的 45%（原来 80%，太大了）
+const VIEW_OUT = 3.4;                // 视野再翻倍（1.7 → 3.4）
 const CHAR_GAIN = 2.0;               // 相机目标屏高倍数：配合角色世界尺寸翻倍，精确落到"视野 ×1.5"
 const CITY_SHRINK = 0.62;            // 城市建筑整体缩小：开局巨兽相对建筑更大
 const MACRO_SHRINK = 0.5;            // 海岛大陆整体缩小一半：山脉级/大陆级的体型比例翻倍
@@ -3758,7 +3759,7 @@ function updateCamera(dt) {
   const ratio = Math.max(1, P.h / BASE_H);
   // 吸收之旅的城区阶段：形象再翻倍（镜头更近，世界没变）
   const stageBoost = (mode === 'endless' && stage === 'city') ? 2 : 1;
-  const targetPx = clamp((160 + 60 * Math.log2(ratio)) * CHAR_GAIN * stageBoost, 160, VH * 0.8 * VIEW_OUT);
+  const targetPx = clamp((160 + 60 * Math.log2(ratio)) * CHAR_GAIN * stageBoost, 160, VH * SCREEN_CAP * VIEW_OUT);
   const tz = clamp(targetPx / Math.max(1, P.h) / VIEW_OUT, 0.000001, 9.0);   // 以 1.5 倍视野拉远
   cam.zoom = lerp(cam.zoom, tz, 1 - Math.pow(0.002, dt));
   // 人物强制锁定在屏幕中央（不做任何前瞻偏移）
